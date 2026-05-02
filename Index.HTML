@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pinned</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Fraunces:ital,wght@0,700;1,700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --white:#ffffff;
+  --bg:#f0f6ff;
+  --surface2:#eaf3ff;
+  --surface3:#daeeff;
+  --blue:#5aabf5;
+  --blue-mid:#3d94e8;
+  --blue-deep:#1a6fc4;
+  --blue-pale:#c8e4fd;
+  --blue-faint:#eaf3ff;
+  --border:#cce0f7;
+  --border2:#b0cfee;
+  --text:#1a2840;
+  --text2:#4a6280;
+  --muted:#8aaac8;
+  --shadow:0 2px 16px rgba(90,171,245,0.13);
+  --shadow-md:0 4px 28px rgba(90,171,245,0.18);
+  --r:14px;--rs:9px;--rl:20px;
+}
+html,body{height:100%;background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text);overflow:hidden;}
+.app{display:flex;flex-direction:column;height:100vh;}
+.hud{display:flex;flex:1;overflow:hidden;position:relative;}
+
+/* NAV */
+.topnav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;height:58px;background:var(--white);
+  border-bottom:1.5px solid var(--border);flex-shrink:0;z-index:100;
+  box-shadow:0 2px 12px rgba(90,171,245,0.08);
+}
+.logo{font-family:'Fraunces',serif;font-style:italic;font-weight:700;font-size:24px;color:var(--blue-mid);display:flex;align-items:center;gap:6px;}
+.nav-group-pill{
+  display:flex;align-items:center;gap:8px;padding:7px 14px 7px 10px;
+  background:var(--blue-faint);border:1.5px solid var(--blue-pale);
+  border-radius:22px;cursor:pointer;transition:all .2s;
+  font-size:13px;font-weight:700;color:var(--blue-deep);
+}
+.nav-group-pill:hover{background:var(--blue-pale);}
+.pill-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.nav-right{display:flex;gap:8px;}
+.nav-btn{
+  height:36px;border-radius:22px;padding:0 14px;
+  background:var(--white);border:1.5px solid var(--border2);
+  display:flex;align-items:center;gap:6px;cursor:pointer;
+  font-size:13px;font-weight:700;color:var(--text2);font-family:'Nunito',sans-serif;transition:all .2s;
+}
+.nav-btn:hover{background:var(--blue-faint);border-color:var(--blue);color:var(--blue-deep);}
+.nav-btn svg{width:15px;height:15px;}
+.nav-btn.primary{background:var(--blue-mid);border-color:var(--blue-mid);color:#fff;box-shadow:0 2px 10px rgba(61,148,232,0.28);}
+.nav-btn.primary:hover{background:var(--blue-deep);}
+
+/* OVERLAY */
+.sidebar-overlay{display:none;position:absolute;inset:0;z-index:15;background:rgba(26,40,64,0.15);backdrop-filter:blur(1.5px);cursor:pointer;}
+.sidebar-overlay.on{display:block;}
+
+/* SIDEBAR */
+.sidebar{
+  width:310px;flex-shrink:0;background:var(--white);
+  border-right:1.5px solid var(--border);display:flex;flex-direction:column;
+  z-index:20;box-shadow:3px 0 20px rgba(90,171,245,0.09);
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  position:absolute;height:100%;
+}
+.sidebar.off{transform:translateX(-100%);pointer-events:none;}
+
+/* TABS */
+.stabs{display:flex;padding:10px 10px 0;gap:4px;border-bottom:1.5px solid var(--border);background:var(--white);}
+.stab{
+  flex:1;padding:9px 6px;text-align:center;font-size:12px;font-weight:700;
+  color:var(--muted);cursor:pointer;border-radius:var(--rs) var(--rs) 0 0;
+  border-bottom:2.5px solid transparent;transition:all .18s;letter-spacing:.04em;text-transform:uppercase;
+}
+.stab.on{color:var(--blue-mid);border-bottom-color:var(--blue-mid);background:var(--blue-faint);}
+.stab:hover:not(.on){color:var(--text2);background:var(--bg);}
+.spanel{flex:1;display:none;flex-direction:column;overflow:hidden;}
+.spanel.on{display:flex;}
+
+/* GROUPS */
+.gscroll{flex:1;overflow-y:auto;padding:10px;}
+.glabel{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:4px 6px 8px;}
+.gcard{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:var(--r);cursor:pointer;transition:all .17s;
+  border:1.5px solid transparent;margin-bottom:5px;
+}
+.gcard:hover,.gcard.on{background:var(--blue-faint);border-color:var(--blue-pale);}
+.gav{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.ginfo{flex:1;min-width:0;}
+.gname{font-size:14px;font-weight:700;color:var(--text);}
+.gsub{font-size:12px;color:var(--muted);margin-top:1px;}
+.gcnt{min-width:22px;height:22px;border-radius:11px;background:var(--blue-mid);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px;}
+.new-grp-btn{
+  margin:6px 10px 10px;padding:11px;border:2px dashed var(--blue-pale);border-radius:var(--r);
+  color:var(--blue-mid);font-size:13px;font-weight:700;font-family:'Nunito',sans-serif;
+  background:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.new-grp-btn:hover{background:var(--blue-faint);border-color:var(--blue);}
+.msec{border-top:1.5px solid var(--border);padding:12px 10px;flex-shrink:0;max-height:190px;overflow-y:auto;}
+.slabel{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+.mrow{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.mname{font-size:13px;font-weight:600;}
+.mpins{font-size:11px;color:var(--muted);margin-left:auto;}
+
+/* CHAT shared */
+.msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;}
+.msg{display:flex;gap:8px;animation:fu .22s ease;}
+.msg.me{flex-direction:row-reverse;}
+.mav{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.mbody{max-width:200px;}
+.mmeta{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.msg.me .mmeta{flex-direction:row-reverse;}
+.mauthor{font-size:11px;font-weight:700;}
+.mtime{font-size:10px;color:var(--muted);}
+.mbubble{background:var(--bg);border:1.5px solid var(--border);border-radius:14px;padding:8px 11px;font-size:13px;line-height:1.5;color:var(--text);}
+.msg.me .mbubble{background:var(--blue-mid);border-color:var(--blue-mid);color:#fff;}
+.cinput-wrap{padding:10px 12px;border-top:1.5px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.cinput{flex:1;background:var(--bg);border:1.5px solid var(--border2);border-radius:20px;padding:9px 14px;color:var(--text);font-size:13px;font-family:'Nunito',sans-serif;outline:none;transition:border-color .2s;}
+.cinput:focus{border-color:var(--blue);}
+.cinput::placeholder{color:var(--muted);}
+.sbtn{width:36px;height:36px;border-radius:50%;background:var(--blue-mid);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(61,148,232,0.3);transition:all .2s;}
+.sbtn:hover{background:var(--blue-deep);}
+.sbtn svg{width:14px;height:14px;color:#fff;}
+
+/* GROUP inline chat (slides in over groups list) */
+.gchat-view{
+  position:absolute;inset:0;background:var(--white);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+  z-index:5;
+}
+.gchat-view.on{transform:translateX(0);}
+.gchat-hd{
+  padding:10px 12px;border-bottom:1.5px solid var(--border);
+  display:flex;align-items:center;gap:8px;flex-shrink:0;position:relative;
+}
+.back-btn{
+  width:28px;height:28px;border-radius:8px;background:var(--bg);
+  border:1.5px solid var(--border);display:flex;align-items:center;
+  justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;
+  font-size:13px;color:var(--text2);
+}
+.back-btn:hover{background:var(--blue-faint);border-color:var(--blue);}
+.gchat-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.gchat-name-btn{
+  font-size:14px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;gap:5px;padding:3px 8px;
+  border-radius:8px;transition:background .15s;
+  border:none;background:none;font-family:'Nunito',sans-serif;color:var(--text);
+}
+.gchat-name-btn:hover{background:var(--blue-faint);}
+.gchat-name-btn .chev{font-size:9px;color:var(--muted);transition:transform .2s;}
+.gchat-name-btn.open .chev{transform:rotate(180deg);}
+.member-dropdown{
+  position:absolute;top:calc(100% + 4px);left:10px;
+  background:var(--white);border:1.5px solid var(--border2);
+  border-radius:var(--r);box-shadow:var(--shadow-md);
+  min-width:200px;z-index:50;overflow:hidden;
+  display:none;animation:fu .18s ease;
+}
+.member-dropdown.open{display:block;}
+.md-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:10px 12px 6px;}
+.md-row{display:flex;align-items:center;gap:9px;padding:7px 12px;}
+.md-row:last-child{padding-bottom:10px;}
+
+/* Add friend btn */
+.add-friend-btn{
+  width:30px;height:30px;border-radius:50%;
+  background:var(--blue-faint);border:1.5px solid var(--blue-pale);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;color:var(--blue-mid);
+  margin-left:auto;flex-shrink:0;
+}
+.add-friend-btn:hover{background:var(--blue-pale);border-color:var(--blue);}
+.add-friend-btn svg{width:14px;height:14px;}
+
+/* DM list */
+.dm-list{flex:1;overflow-y:auto;padding:10px;}
+.dm-row{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;
+  border-radius:var(--r);cursor:pointer;transition:all .15s;
+  border:1.5px solid transparent;margin-bottom:4px;
+}
+.dm-row:hover,.dm-row.on{background:var(--blue-faint);border-color:var(--blue-pale);}
+.dm-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.dm-info{flex:1;min-width:0;}
+.dm-name{font-size:13px;font-weight:700;}
+.dm-preview{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.dm-time{font-size:11px;color:var(--muted);}
+.dm-pins{display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;margin-left:auto;}
+.dm-pin-count{font-size:13px;font-weight:800;color:var(--blue-deep);line-height:1;}
+.dm-pin-icon{font-size:12px;line-height:1;}
+.dm-pin-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+
+/* DM chat view (same slide-in pattern) */
+.dm-view{
+  position:absolute;inset:0;background:var(--white);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+  z-index:6;
+}
+.dm-view.on{transform:translateX(0);}
+.dm-hd{
+  padding:10px 12px;border-bottom:1.5px solid var(--border);
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.dm-hd-name{font-size:14px;font-weight:700;}
+/* msg styles moved above */
+@keyframes fu{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* MAP */
+#map{position:absolute;inset:0;}
+.mapc{flex:1;position:relative;overflow:hidden;}
+.mhud{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:8px;z-index:10;}
+.mhbtn{width:40px;height:40px;border-radius:var(--rs);background:var(--white);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:all .2s;box-shadow:var(--shadow);}
+.mhbtn:hover{background:var(--blue-faint);border-color:var(--blue);}
+.mhbtn svg{width:16px;height:16px;}
+
+/* REVIEW PANEL */
+.rpanel{position:absolute;bottom:0;left:0;right:0;background:var(--white);border-top:1.5px solid var(--border);border-radius:22px 22px 0 0;box-shadow:0 -4px 32px rgba(90,171,245,0.15);transform:translateY(100%);transition:transform .34s cubic-bezier(.4,0,.2,1);z-index:30;max-height:62%;display:flex;flex-direction:column;}
+.rpanel.on{transform:translateY(0);}
+.rhandle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;flex-shrink:0;cursor:pointer;}
+.rclose{position:absolute;top:10px;right:14px;width:28px;height:28px;background:var(--bg);border:1.5px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--text2);transition:all .2s;}
+.rclose:hover{background:var(--blue-faint);}
+.rhdr{padding:8px 20px 12px;border-bottom:1.5px solid var(--border);flex-shrink:0;}
+.rplace{font-family:'Fraunces',serif;font-weight:700;font-size:19px;}
+.rmeta{display:flex;align-items:center;gap:8px;margin-top:3px;}
+.raddr{font-size:12px;color:var(--muted);}
+.rtag{background:var(--blue-faint);color:var(--blue-deep);border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700;border:1px solid var(--blue-pale);}
+.rreviews{overflow-y:auto;padding:12px 18px;display:flex;flex-direction:column;gap:10px;}
+.rcard{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:12px;}
+.rtop{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.rauthor{font-size:13px;font-weight:700;}
+.rtime{font-size:11px;color:var(--muted);margin-left:auto;}
+.stars{display:flex;gap:1px;margin-bottom:5px;}
+.rtext{font-size:13px;color:var(--text2);line-height:1.55;}
+.rfooter{padding:10px 18px 16px;flex-shrink:0;border-top:1.5px solid var(--border);}
+.arbtn{width:100%;background:var(--blue-mid);color:#fff;border:none;border-radius:var(--r);padding:12px;font-size:14px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;box-shadow:0 2px 10px rgba(61,148,232,0.25);}
+.arbtn:hover{background:var(--blue-deep);}
+
+/* MODALS */
+.mo{position:fixed;inset:0;background:rgba(26,40,64,0.28);backdrop-filter:blur(3px);z-index:200;display:none;align-items:center;justify-content:center;}
+.mo.on{display:flex;}
+.modal{background:var(--white);border:1.5px solid var(--border);border-radius:var(--rl);padding:24px;width:380px;box-shadow:var(--shadow-md);animation:fu .25s ease;max-height:90vh;overflow-y:auto;}
+.mtitle{font-family:'Fraunces',serif;font-weight:700;font-size:20px;margin-bottom:18px;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.07em;}
+.fi{width:100%;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-size:13px;font-family:'Nunito',sans-serif;outline:none;transition:border-color .2s;}
+.fi:focus{border-color:var(--blue);}
+textarea.fi{resize:none;height:76px;}
+.starrow{display:flex;gap:7px;margin-top:2px;}
+.sbtnx{font-size:22px;cursor:pointer;opacity:.3;transition:all .15s;color:var(--blue-mid);}
+.sbtnx.on{opacity:1;}
+.macts{display:flex;gap:8px;margin-top:18px;}
+.bcnl{flex:1;padding:11px;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--rs);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer;transition:all .2s;}
+.bcnl:hover{background:var(--surface3);}
+.bsub{flex:2;padding:11px;background:var(--blue-mid);border:none;border-radius:var(--rs);color:#fff;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;box-shadow:0 2px 10px rgba(61,148,232,0.25);}
+.bsub:hover{background:var(--blue-deep);}
+/* emoji */
+.erow{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.eopt{width:36px;height:36px;border-radius:9px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;transition:all .15s;background:var(--bg);}
+.eopt.on{border-color:var(--blue);background:var(--blue-faint);}
+.eopt:hover{background:var(--blue-faint);}
+/* friends */
+.flist{max-height:150px;overflow-y:auto;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--bg);}
+.fopt{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border);}
+.fopt:last-child{border-bottom:none;}
+.fopt:hover,.fopt.on{background:var(--blue-faint);}
+.fchk{width:18px;height:18px;border-radius:5px;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;transition:all .15s;}
+.fopt.on .fchk{background:var(--blue-mid);border-color:var(--blue-mid);color:#fff;}
+.fname{font-size:13px;font-weight:600;}
+.ftags{display:flex;flex-wrap:wrap;gap:5px;min-height:24px;margin-top:6px;}
+.ftag{background:var(--blue-faint);border:1px solid var(--blue-pale);border-radius:20px;padding:3px 10px 3px 8px;font-size:12px;font-weight:600;color:var(--blue-deep);display:flex;align-items:center;gap:4px;cursor:pointer;}
+.ftag:hover{background:var(--blue-pale);}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--blue-pale);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- NAV -->
+<nav class="topnav">
+  <div class="logo">📍 pinned</div>
+  <div class="nav-group-pill" id="gpill" onclick="openGroups()">
+    <div class="pill-dot" id="pdot" style="background:#5aabf5"></div>
+    <span id="pname">Select a group</span>
+    <span style="font-size:9px;color:var(--muted);margin-left:2px">▾</span>
+  </div>
+  <div class="nav-right">
+    <button class="nav-btn" onclick="toggleSidebar()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      Menu
+    </button>
+    <button class="nav-btn primary" onclick="openPinModal()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Drop Pin
+    </button>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--blue-faint);border:1.5px solid var(--blue-pale);border-radius:10px;padding:4px 10px;min-width:44px;">
+      <span style="font-size:16px;font-weight:800;color:var(--blue-deep);line-height:1" id="myPinCount">0</span>
+      <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;line-height:1;margin-top:1px;">my pins</span>
+    </div>
+  </div>
+</nav>
+
+<div class="hud">
+  <!-- OVERLAY -->
+  <div class="sidebar-overlay" id="sov" onclick="hideSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar off" id="sb" style="position:absolute;height:100%;overflow:hidden;">
+    <div class="stabs">
+      <div class="stab on" data-t="groups">Groups</div>
+      <div class="stab" data-t="dms">Messages</div>
+    </div>
+
+    <!-- GROUPS PANEL -->
+    <div class="spanel on" id="tp-groups" style="position:relative;">
+      <div class="gscroll">
+        <div class="glabel">Your Groups</div>
+        <div id="glist"></div>
+      </div>
+      <div class="msec" id="msec" style="display:none"></div>
+      <button class="new-grp-btn" onclick="openCreateGroup()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create new group
+      </button>
+      <!-- Group chat slides in over the group list -->
+      <div class="gchat-view" id="gchatView">
+        <div class="gchat-hd">
+          <div class="back-btn" onclick="closeGroupChat()">&#8592;</div>
+          <div class="gchat-dot" id="gchatDot"></div>
+          <button class="gchat-name-btn" id="gchatNameBtn" onclick="toggleMemberDrop()">
+            <span class="chev">▾</span>
+          </button>
+          <div class="member-dropdown" id="memberDrop"></div>
+        </div>
+        <div class="msgs" id="msgs">
+          <div data-ph="1" style="text-align:center;padding:30px 10px;color:var(--muted);font-size:13px">Pick a group to chat 👋</div>
+        </div>
+        <div class="cinput-wrap">
+          <input class="cinput" id="ci" placeholder="Message the group…" autocomplete="off" onkeydown="if(event.key==='Enter')sendMsg()"/>
+          <button class="sbtn" onclick="sendMsg()">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DMs PANEL -->
+    <div class="spanel" id="tp-dms" style="position:relative;">
+      <div style="display:flex;align-items:center;padding:10px 14px 0;flex-shrink:0;">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Direct Messages</span>
+        <div class="add-friend-btn" onclick="openAddFriendModal()" title="Add friend">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <line x1="19" y1="8" x2="19" y2="14"/>
+            <line x1="22" y1="11" x2="16" y2="11"/>
+          </svg>
+        </div>
+      </div>
+      <div class="dm-list" id="dmList"></div>
+      <!-- DM conversation slides in -->
+      <div class="dm-view" id="dmView">
+        <div class="dm-hd">
+          <div class="back-btn" onclick="closeDmView()">&#8592;</div>
+          <div class="dm-av" id="dmHdAv" style="width:28px;height:28px;border-radius:50%;font-size:10px;font-weight:700;flex-shrink:0"></div>
+          <span class="dm-hd-name" id="dmHdName"></span>
+        </div>
+        <div class="msgs" id="dmMsgs">
+          <div data-ph="1" style="text-align:center;padding:30px 10px;color:var(--muted);font-size:13px">Say hi! 👋</div>
+        </div>
+        <div class="cinput-wrap">
+          <input class="cinput" id="dmCi" placeholder="Message…" autocomplete="off" onkeydown="if(event.key==='Enter')sendDm()"/>
+          <button class="sbtn" onclick="sendDm()">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="mapc">
+    <div id="map"></div>
+    <div class="mhud">
+      <div class="mhbtn" onclick="myLoc()" title="My location">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      </div>
+      <div class="mhbtn" onclick="mapI&&mapI.setZoom(mapI.getZoom()+1)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <div class="mhbtn" onclick="mapI&&mapI.setZoom(mapI.getZoom()-1)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+    </div>
+
+    <!-- REVIEW PANEL -->
+    <div class="rpanel" id="rp">
+      <div class="rhandle" onclick="closeReview()"></div>
+      <div class="rclose" onclick="closeReview()">✕</div>
+      <div class="rhdr">
+        <div class="rplace" id="rplace"></div>
+        <div class="rmeta"><span class="raddr" id="rgrp"></span><span class="rtag" id="rtag"></span></div>
+      </div>
+      <div class="rreviews" id="rreviews"></div>
+      <div class="rfooter"><button class="arbtn" onclick="openPinModal()">+ Add your review</button></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- DROP PIN MODAL -->
+<div class="mo" id="pinMo">
+  <div class="modal">
+    <div class="mtitle">Drop a Pin 📍</div>
+    <div class="field"><label>Place name</label><input class="fi" id="pname2" placeholder="e.g. Café Olimpico"/></div>
+    <div class="field">
+      <label>Type</label>
+      <select class="fi" id="ptype">
+        <option value="coffee">☕ Coffee</option>
+        <option value="restaurant">🍜 Restaurant</option>
+        <option value="bar">🍸 Bar / Drinks</option>
+        <option value="viewpoint">⭐ Viewpoint</option>
+        <option value="shop">🛍️ Shop</option>
+        <option value="park">🌿 Park / Outdoors</option>
+        <option value="other">📍 Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Group</label><select class="fi" id="pgrp"></select></div>
+    <div class="field"><label>Your review</label><textarea class="fi" id="prev" placeholder="What made this worth pinning?"></textarea></div>
+    <div class="field">
+      <label>Rating</label>
+      <div class="starrow" id="starrow">
+        <span class="sbtnx on" data-v="1">★</span><span class="sbtnx on" data-v="2">★</span>
+        <span class="sbtnx on" data-v="3">★</span><span class="sbtnx on" data-v="4">★</span>
+        <span class="sbtnx on" data-v="5">★</span>
+      </div>
+    </div>
+    <div class="macts">
+      <button class="bcnl" onclick="closeMo('pinMo')">Cancel</button>
+      <button class="bsub" onclick="submitPin()">Drop it 📍</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE GROUP MODAL -->
+<div class="mo" id="cgMo">
+  <div class="modal">
+    <div class="mtitle">Create a Group 👥</div>
+    <div class="field"><label>Group name</label><input class="fi" id="ngname" placeholder="e.g. School Friends, Family…"/></div>
+    <div class="field">
+      <label>Group icon</label>
+      <div class="erow" id="erow">
+        <div class="eopt on" data-e="🏫">🏫</div><div class="eopt" data-e="🏠">🏠</div>
+        <div class="eopt" data-e="🎉">🎉</div><div class="eopt" data-e="🌿">🌿</div>
+        <div class="eopt" data-e="🍕">🍕</div><div class="eopt" data-e="🎵">🎵</div>
+        <div class="eopt" data-e="⚽">⚽</div><div class="eopt" data-e="💼">💼</div>
+        <div class="eopt" data-e="📚">📚</div><div class="eopt" data-e="✈️">✈️</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Add friends</label>
+      <input class="fi" id="fsearch" placeholder="Search friends…" oninput="renderFriends()" style="margin-bottom:8px"/>
+      <div class="flist" id="flist"></div>
+      <div class="ftags" id="ftags"></div>
+    </div>
+    <div class="macts">
+      <button class="bcnl" onclick="closeMo('cgMo')">Cancel</button>
+      <button class="bsub" onclick="submitGroup()">Create Group 🎉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MAPS_KEY="{{ maps_api_key }}";
+let mapI,groups=[],pins=[],activeGroup=null,ws=null;
+let selStars=5,pendingLL=null,selEmoji="🏫",selFriends=[];
+
+const PICONS={coffee:"☕",restaurant:"🍜",bar:"🍸",viewpoint:"⭐",shop:"🛍️",park:"🌿",other:"📍"};
+const PCOLORS={coffee:"#f59e0b",restaurant:"#5aabf5",bar:"#ec4899",viewpoint:"#a78bfa",shop:"#3b82f6",park:"#22c55e",other:"#8aaac8"};
+const GCOLS=["#5aabf5","#f59e0b","#ec4899","#a78bfa","#22c55e","#f97316","#14b8a6"];
+const AVCOLS=["#5aabf5","#f59e0b","#ec4899","#a78bfa","#22c55e","#f97316","#14b8a6"];
+const ALL_FRIENDS=[
+  {n:"Sophie L.",i:"SL"},{n:"Marcus K.",i:"MK"},{n:"Jamie R.",i:"JR"},
+  {n:"Alex B.",i:"AB"},{n:"Zoe K.",i:"ZK"},{n:"Dan M.",i:"DM"},
+  {n:"Priya S.",i:"PS"},{n:"Leo T.",i:"LT"},{n:"Mia C.",i:"MC"},{n:"Noah P.",i:"NP"},
+];
+
+async function initApp(){
+  const [g,p]=await Promise.all([
+    fetch("/api/groups").then(r=>r.json()),
+    fetch("/api/pins").then(r=>r.json())
+  ]);
+  groups=g; pins=p;
+  renderGroups();
+  if(groups.length) setActiveGroup(groups[0]);
+  fillPGrp();
+  renderFriends();
+  renderDmList();
+  updateMyPinCount();
+}
+
+// ── SIDEBAR ──
+let sbOpen=false;
+function toggleSidebar(){sbOpen?hideSidebar():showSidebar();}
+function showSidebar(){
+  sbOpen=true;
+  document.getElementById("sb").classList.remove("off");
+  document.getElementById("sov").classList.add("on");
+}
+function hideSidebar(){
+  sbOpen=false;
+  document.getElementById("sb").classList.add("off");
+  document.getElementById("sov").classList.remove("on");
+}
+function openGroups(){
+  if(sbOpen){hideSidebar();}else{showSidebar();switchTab("groups");}
+}
+
+// ── TABS ──
+document.querySelectorAll(".stab").forEach(t=>{
+  t.onclick=()=>switchTab(t.dataset.t);
+});
+function switchTab(name){
+  document.querySelectorAll(".stab").forEach(t=>t.classList.toggle("on",t.dataset.t===name));
+  document.querySelectorAll(".spanel").forEach(p=>p.classList.toggle("on",p.id==="tp-"+name));
+}
+
+// ── GROUPS ──
+function renderGroups(){
+  document.getElementById("glist").innerHTML=groups.map((g,i)=>`
+    <div class="gcard ${activeGroup&&activeGroup.id===g.id?"on":""}" onclick='setAG(${JSON.stringify(g)})'>
+      <div class="gav" style="background:${GCOLS[i%GCOLS.length]}18;border:2px solid ${GCOLS[i%GCOLS.length]}40;border-radius:12px">${g.emoji||"👥"}</div>
+      <div class="ginfo">
+        <div class="gname">${g.name}</div>
+        <div class="gsub">${g.members.length} member${g.members.length!==1?"s":""} · ${pins.filter(p=>p.group===g.name).length} pins</div>
+      </div>
+      <div class="gcnt" style="background:${GCOLS[i%GCOLS.length]}">${pins.filter(p=>p.group===g.name).length}</div>
+    </div>`).join("")||`<div style="text-align:center;padding:24px 10px;color:var(--muted);font-size:13px">No groups yet — create one below!</div>`;
+}
+
+function setAG(g){
+  activeGroup=g;
+  renderGroups();
+  const i=groups.findIndex(x=>x.id===g.id);
+  const col=GCOLS[i%GCOLS.length];
+  // update nav pill
+  document.getElementById("pdot").style.background=col;
+  document.getElementById("pname").textContent=g.name;
+  // update group chat header
+  document.getElementById("gchatDot").style.background=col;
+  document.getElementById("gchatNameBtn").innerHTML=g.name+' <span class="chev">\u25be</span>';
+  renderMemberDrop(g,i);
+  loadChat(g.id);
+  renderPins();
+  // slide in the group chat view (stays within groups panel)
+  document.getElementById("gchatView").classList.add("on");
+  showSidebar();
+}
+function setActiveGroup(g){setAG(g);}
+
+function closeGroupChat(){
+  document.getElementById("gchatView").classList.remove("on");
+  // close member dropdown too
+  memberDropOpen=false;
+  document.getElementById("memberDrop").classList.remove("open");
+  if(document.getElementById("gchatNameBtn"))
+    document.getElementById("gchatNameBtn").classList.remove("open");
+}
+
+function renderMembers(g,gi){
+  const sec=document.getElementById("msec");
+  sec.style.display="block";
+  sec.innerHTML="<div class=\"slabel\">"+g.name+"</div>"
+    +["You",...g.members].map(function(m,i){
+      const c=AVCOLS[i%AVCOLS.length];
+      const ini=m==="You"?"ME":m.split(" ").map(function(x){return x[0];}).join("");
+      return "<div class=\"mrow\"><div class=\"av\" style=\"background:"+c+"20;color:"+c+";border:2px solid "+c+"40\">"+ini+"</div><span class=\"mname\">"+m+"</span></div>";
+    }).join("");
+}
+
+// ── DM LIST ──
+const dmCache={};  // { friendName: [msgs] }
+let currentDmFriend=null;
+
+// Extra DM friends added via add-friend modal (not in any group)
+const extraDmFriends=[];
+
+function getPinCount(name){
+  return pins.filter(function(p){
+    return p.reviews&&p.reviews.some(function(r){return r.author===name;});
+  }).length;
+}
+
+function renderDmList(){
+  const groupFriends=[...new Set(groups.flatMap(g=>g.members))];
+  const allFriends=[...new Set([...groupFriends,...extraDmFriends])];
+  document.getElementById("dmList").innerHTML=
+    allFriends.map(function(name,i){
+      const ac=AVCOLS[i%AVCOLS.length];
+      const ini=name.split(" ").map(function(x){return x[0];}).join("");
+      const msgs=dmCache[name]||[];
+      const preview=msgs.length?msgs[msgs.length-1].text:"Tap to say hi!";
+      const pinCount=getPinCount(name);
+      const fireEmoji=pinCount>=10?"\uD83D\uDD25":pinCount>=5?"\uD83D\uDCCD":pinCount>=1?"\uD83D\uDCCC":"\u00B7";
+      const pinBadge="<div class=\"dm-pins\"><span class=\"dm-pin-icon\""+( pinCount===0?" style=\"opacity:.3\"":"")+">"+fireEmoji+"</span><span class=\"dm-pin-count\""+( pinCount===0?" style=\"color:var(--muted)\"":"")+">"+pinCount+"</span><span class=\"dm-pin-label\">pins</span></div>";
+      return "<div class=\"dm-row\" onclick=\"openDm('"+name+"',"+i+")\">"        +"<div class=\"dm-av\" style=\"background:"+ac+"20;color:"+ac+";border:2px solid "+ac+"40\">"+ini+"</div>"        +"<div class=\"dm-info\"><div class=\"dm-name\">"+name+"</div>"        +"<div class=\"dm-preview\">"+preview+"</div></div>"        +pinBadge        +"</div>";
+    }).join("")    ||"<div style=\"text-align:center;padding:24px 10px;color:var(--muted);font-size:13px\">No friends yet — add some above!</div>";
+}
+
+function openDm(name, idx){
+  currentDmFriend=name;
+  const ac=AVCOLS[idx%AVCOLS.length];
+  const ini=name.split(" ").map(function(x){return x[0];}).join("");
+  // header
+  const hdAv=document.getElementById("dmHdAv");
+  hdAv.textContent=ini;
+  hdAv.style.background=ac+"20";
+  hdAv.style.color=ac;
+  hdAv.style.border="2px solid "+ac+"40";
+  document.getElementById("dmHdName").textContent=name;
+  document.getElementById("dmCi").value="";
+  // render messages
+  const dmMsgs=document.getElementById("dmMsgs");
+  dmMsgs.innerHTML="";
+  const msgs=dmCache[name]||[];
+  if(!msgs.length){
+    dmMsgs.innerHTML="<div data-ph=\"1\" style=\"text-align:center;padding:30px 10px;color:var(--muted);font-size:13px\">No messages yet — say hi! 👋</div>";
+  } else {
+    msgs.forEach(function(m){dmMsgs.appendChild(buildMsgEl(m));});
+  }
+  dmMsgs.scrollTop=dmMsgs.scrollHeight;
+  document.getElementById("dmView").classList.add("on");
+}
+
+function closeDmView(){
+  document.getElementById("dmView").classList.remove("on");
+  currentDmFriend=null;
+  renderDmList();
+}
+
+function sendDm(){
+  const inp=document.getElementById("dmCi");
+  const t=inp.value.trim();
+  if(!t||!currentDmFriend)return;
+  const now=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  const msg={author:"You",initials:"ME",text:t,time:now};
+  if(!dmCache[currentDmFriend])dmCache[currentDmFriend]=[];
+  dmCache[currentDmFriend].push(msg);
+  const c=document.getElementById("dmMsgs");
+  const ph=c.querySelector("[data-ph]");
+  if(ph)ph.remove();
+  c.appendChild(buildMsgEl(msg));
+  c.scrollTop=c.scrollHeight;
+  inp.value="";
+}
+
+function fillPGrp(){
+  document.getElementById("pgrp").innerHTML=groups.map(g=>`<option>${g.name}</option>`).join("")
+    ||(activeGroup?`<option>${activeGroup.name}</option>`:"<option>No groups yet</option>");
+}
+
+// ── MAP ──
+window.initMap=function(){
+  mapI=new google.maps.Map(document.getElementById("map"),{
+    center:{lat:45.5088,lng:-73.5541},zoom:14,disableDefaultUI:true,
+    styles:[
+      {elementType:"geometry",stylers:[{color:"#e8f4fd"}]},
+      {elementType:"labels.text.fill",stylers:[{color:"#4a6280"}]},
+      {elementType:"labels.text.stroke",stylers:[{color:"#ffffff"}]},
+      {featureType:"road",elementType:"geometry",stylers:[{color:"#ffffff"}]},
+      {featureType:"road",elementType:"geometry.stroke",stylers:[{color:"#cce0f7"}]},
+      {featureType:"road.highway",elementType:"geometry",stylers:[{color:"#b0d4f0"}]},
+      {featureType:"road.highway",elementType:"geometry.stroke",stylers:[{color:"#8bbde0"}]},
+      {featureType:"water",elementType:"geometry",stylers:[{color:"#a8d4f0"}]},
+      {featureType:"poi.park",elementType:"geometry",stylers:[{color:"#c8ebd0"}]},
+      {featureType:"poi.business",stylers:[{visibility:"off"}]},
+      {featureType:"transit",stylers:[{visibility:"off"}]},
+      {featureType:"landscape",elementType:"geometry",stylers:[{color:"#eaf3ff"}]},
+    ]
+  });
+  mapI.addListener("click",e=>{pendingLL=e.latLng;openPinModal();});
+  renderPins();
+};
+
+let markers=[];
+function renderPins(){
+  markers.forEach(m=>m.setMap(null));markers=[];
+  const show=activeGroup?pins.filter(p=>p.group===activeGroup.name):pins;
+  show.forEach(pin=>{
+    const c=PCOLORS[pin.type]||"#8aaac8";
+    const ic=PICONS[pin.type]||"📍";
+    const n=pin.reviews.length;
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="54" height="62" viewBox="0 0 54 62">
+      <circle cx="27" cy="27" r="23" fill="${c}28"/>
+      <circle cx="27" cy="27" r="17" fill="${c}" stroke="white" stroke-width="2.5"/>
+      <text x="27" y="32" text-anchor="middle" font-size="14">${ic}</text>
+      ${n?`<circle cx="41" cy="11" r="9" fill="white" stroke="${c}" stroke-width="2"/>
+      <text x="41" y="15" text-anchor="middle" font-size="10" fill="${c}" font-weight="bold" font-family="Nunito,sans-serif">${n}</text>`:""}
+    </svg>`;
+    const mk=new google.maps.Marker({
+      position:{lat:pin.lat,lng:pin.lng},map:mapI,title:pin.name,
+      icon:{url:"data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svg),scaledSize:new google.maps.Size(54,62)}
+    });
+    mk.addListener("click",()=>showReview(pin));
+    markers.push(mk);
+  });
+}
+
+// ── REVIEW PANEL ──
+function showReview(pin){
+  document.getElementById("rplace").textContent=pin.name;
+  document.getElementById("rgrp").textContent=pin.group;
+  document.getElementById("rtag").textContent=(PICONS[pin.type]||"📍")+" "+pin.type;
+  const c=document.getElementById("rreviews");
+  if(!pin.reviews.length){
+    c.innerHTML=`<p style="color:var(--muted);font-size:13px;text-align:center;padding:24px">No reviews yet — be the first!</p>`;
+  } else {
+    c.innerHTML=pin.reviews.map((r,i)=>{
+      const ac=AVCOLS[i%AVCOLS.length];
+      const ini=r.initials||(r.author.split(" ").map(x=>x[0]).join(""));
+      return `<div class="rcard">
+        <div class="rtop">
+          <div class="av" style="background:${ac}20;color:${ac};border:2px solid ${ac}40;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${ini}</div>
+          <span class="rauthor">${r.author}</span>
+          <span class="rtime">${r.time}</span>
+        </div>
+        <div class="stars">
+          ${"★".repeat(r.stars).split("").map(()=>`<span style="color:#5aabf5;font-size:13px">★</span>`).join("")}
+          ${"★".repeat(5-r.stars).split("").map(()=>`<span style="color:#cce0f7;font-size:13px">★</span>`).join("")}
+        </div>
+        <p class="rtext">${r.text}</p>
+      </div>`;
+    }).join("");
+  }
+  document.getElementById("rp").classList.add("on");
+}
+function closeReview(){document.getElementById("rp").classList.remove("on");}
+
+// ── CHAT (HTTP polling, per-group cache) ──
+let currentChatGid=null;
+let pollTimer=null;
+// Cache messages per group so switching back restores history
+const msgCache={};   // { gid: [ ...msg objects ] }
+
+// stable colour per author
+const authorColorCache={};
+function authorColor(name){
+  if(!authorColorCache[name]){
+    let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))%AVCOLS.length;
+    authorColorCache[name]=AVCOLS[h];
+  }
+  return authorColorCache[name];
+}
+
+function buildMsgEl(msg){
+  const mine=msg.author==="You";
+  const ac=authorColor(msg.author);
+  const ini=msg.initials||msg.author.slice(0,2).toUpperCase();
+  const div=document.createElement("div");
+  div.className="msg "+(mine?"me":"");
+  div.innerHTML=
+    '<div class="mav" style="background:'+ac+'20;color:'+ac+';border:2px solid '+ac+'40">'+ini+'</div>'+
+    '<div class="mbody">'+
+      '<div class="mmeta">'+
+        '<span class="mauthor" style="color:'+ac+'">'+msg.author+'</span>'+
+        '<span class="mtime">'+(msg.time||"")+'</span>'+
+      '</div>'+
+      '<div class="mbubble">'+msg.text+'</div>'+
+    '</div>';
+  return div;
+}
+
+function renderChatUI(gid){
+  const c=document.getElementById("msgs");
+  c.innerHTML="";
+  const cached=msgCache[gid]||[];
+  if(!cached.length){
+    c.innerHTML='<div data-ph="1" style="text-align:center;padding:30px 10px;color:var(--muted);font-size:13px">No messages yet — say hi! 👋</div>';
+  } else {
+    cached.forEach(function(m){c.appendChild(buildMsgEl(m));});
+  }
+  c.scrollTop=c.scrollHeight;
+}
+
+async function loadChat(gid){
+  if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+  currentChatGid=gid;
+  document.getElementById("ci").value="";
+
+  // Render cached messages instantly (no flicker, no wipe)
+  if(!msgCache[gid]) msgCache[gid]=[];
+  renderChatUI(gid);
+
+  // Fetch full history from server and merge (avoids wipe on switch-back)
+  const fresh=await fetch("/api/chat/"+gid).then(r=>r.json()).catch(function(){return null;});
+  if(!fresh||currentChatGid!==gid)return;
+  // Replace cache with server truth, then re-render only if something changed
+  if(JSON.stringify(fresh)!==JSON.stringify(msgCache[gid])){
+    msgCache[gid]=fresh;
+    renderChatUI(gid);
+  }
+
+  // Poll every 2s — only append genuinely new server messages
+  pollTimer=setInterval(async function(){
+    if(currentChatGid!==gid){clearInterval(pollTimer);return;}
+    const latest=await fetch("/api/chat/"+gid).then(r=>r.json()).catch(function(){return null;});
+    if(!latest||currentChatGid!==gid)return;
+    const cached=msgCache[gid]||[];
+    if(latest.length>cached.length){
+      const newOnes=latest.slice(cached.length);
+      newOnes.forEach(function(m){
+        if(m.author==="You")return; // already in cache from sendMsg
+        msgCache[gid].push(m);
+        const c=document.getElementById("msgs");
+        const ph=c.querySelector("[data-ph]");
+        if(ph)ph.remove();
+        c.appendChild(buildMsgEl(m));
+        c.scrollTop=c.scrollHeight;
+      });
+    }
+  },2000);
+}
+
+async function sendMsg(){
+  const inp=document.getElementById("ci");
+  const t=inp.value.trim();
+  if(!t||!currentChatGid)return;
+  const gid=currentChatGid;
+  const now=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  const msg={author:"You",initials:"ME",text:t,time:now};
+  // Add to cache immediately so switching away and back still shows it
+  if(!msgCache[gid])msgCache[gid]=[];
+  msgCache[gid].push(msg);
+  // Render into UI
+  const c=document.getElementById("msgs");
+  const ph=c.querySelector("[data-ph]");
+  if(ph)ph.remove();
+  c.appendChild(buildMsgEl(msg));
+  c.scrollTop=c.scrollHeight;
+  inp.value="";
+  // POST to server
+  await fetch("/api/chat/"+gid,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(msg)
+  }).catch(function(){});
+}
+
+// ── MEMBER DROPDOWN ──
+let memberDropOpen=false;
+function toggleMemberDrop(){
+  memberDropOpen=!memberDropOpen;
+  document.getElementById("memberDrop").classList.toggle("open",memberDropOpen);
+  const btn=document.getElementById("gchatNameBtn");
+  if(btn)btn.classList.toggle("open",memberDropOpen);
+}
+document.addEventListener("click",function(e){
+  const hd=document.getElementById("gchatView");
+  if(hd&&!hd.contains(e.target)){
+    memberDropOpen=false;
+    document.getElementById("memberDrop").classList.remove("open");
+    const btn=document.getElementById("gchatNameBtn");
+    if(btn)btn.classList.remove("open");
+  }
+});
+function renderMemberDrop(g,gi){
+  const members=["You",...g.members];
+  document.getElementById("memberDrop").innerHTML=
+    '<div class="md-title">'+g.name+' · '+members.length+' members</div>'+
+    members.map(function(m,i){
+      const ac=AVCOLS[i%AVCOLS.length];
+      const ini=m==="You"?"ME":m.split(" ").map(function(x){return x[0];}).join("");
+      return '<div class="md-row">'+
+        '<div style="width:26px;height:26px;border-radius:50%;background:'+ac+'20;color:'+ac+';border:2px solid '+ac+'40;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+ini+'</div>'+
+        '<span style="font-size:13px;font-weight:600;color:var(--text)">'+m+'</span>'+
+      '</div>';
+    }).join("");
+}
+
+// ── DROP PIN ──
+document.querySelectorAll(".sbtnx").forEach(b=>{
+  b.onclick=()=>{
+    selStars=parseInt(b.dataset.v);
+    document.querySelectorAll(".sbtnx").forEach((s,i)=>s.classList.toggle("on",i<selStars));
+  };
+});
+function openPinModal(){fillPGrp();document.getElementById("pinMo").classList.add("on");}
+function updateMyPinCount(){
+  const n=pins.filter(function(p){return p.reviews&&p.reviews.some(function(r){return r.author==="You";});}).length;
+  document.getElementById("myPinCount").textContent=n;
+}
+async function submitPin(){
+  const name=document.getElementById("pname2").value.trim();
+  if(!name)return;
+  const lat=pendingLL?pendingLL.lat():45.5088;
+  const lng=pendingLL?pendingLL.lng():-73.5541;
+  const pin={lat,lng,name,
+    type:document.getElementById("ptype").value,
+    group:document.getElementById("pgrp").value,
+    reviews:[{author:"You",initials:"ME",color:"#5aabf5",stars:selStars,
+      text:document.getElementById("prev").value||"Pinned it!",time:"Just now"}]};
+  const saved=await fetch("/api/pins",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(pin)}).then(r=>r.json());
+  pins.push(saved);
+  renderGroups();
+  renderPins();
+  updateMyPinCount();
+  closeMo("pinMo");
+  document.getElementById("pname2").value="";
+  document.getElementById("prev").value="";
+  pendingLL=null;
+}
+
+// ── CREATE GROUP ──
+document.querySelectorAll(".eopt").forEach(e=>{
+  e.onclick=()=>{
+    selEmoji=e.dataset.e;
+    document.querySelectorAll(".eopt").forEach(x=>x.classList.toggle("on",x===e));
+  };
+});
+function openCreateGroup(){
+  selFriends=[];selEmoji="🏫";
+  document.querySelectorAll(".eopt").forEach(x=>x.classList.toggle("on",x.dataset.e==="🏫"));
+  document.getElementById("ngname").value="";
+  document.getElementById("fsearch").value="";
+  renderFriends();renderFTags();
+  document.getElementById("cgMo").classList.add("on");
+}
+function renderFriends(){
+  const q=(document.getElementById("fsearch")||{value:""}).value.toLowerCase();
+  const fl=ALL_FRIENDS.filter(f=>f.n.toLowerCase().includes(q));
+  document.getElementById("flist").innerHTML=fl.map((f,i)=>{
+    const on=selFriends.includes(f.n);
+    const ac=AVCOLS[i%AVCOLS.length];
+    return `<div class="fopt ${on?"on":""}" onclick="toggleF('${f.n}')">
+      <div class="fchk">${on?"✓":""}</div>
+      <div class="av" style="background:${ac}20;color:${ac};border:2px solid ${ac}40;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${f.i}</div>
+      <span class="fname">${f.n}</span>
+    </div>`;
+  }).join("");
+}
+function toggleF(name){
+  const i=selFriends.indexOf(name);
+  i>-1?selFriends.splice(i,1):selFriends.push(name);
+  renderFriends();renderFTags();
+}
+function renderFTags(){
+  document.getElementById("ftags").innerHTML=selFriends.map(f=>`
+    <div class="ftag" onclick="toggleF('${f}')">${f.split(" ")[0]} <span style="opacity:.6">✕</span></div>`).join("");
+}
+async function submitGroup(){
+  const name=document.getElementById("ngname").value.trim();
+  if(!name)return;
+  const g={id:"g"+Date.now(),name,emoji:selEmoji,members:[...selFriends],color:GCOLS[groups.length%GCOLS.length]};
+  // save to backend
+  try{
+    await fetch("/api/groups",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(g)});
+  }catch(e){}
+  groups.push(g);
+  renderGroups();fillPGrp();
+  setAG(g);
+  closeMo("cgMo");
+}
+
+function closeMo(id){document.getElementById(id).classList.remove("on");}
+// close on backdrop click
+document.querySelectorAll(".mo").forEach(o=>{
+  o.onclick=e=>{if(e.target===o)o.classList.remove("on");};
+});
+
+function myLoc(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(p=>{
+    mapI.panTo({lat:p.coords.latitude,lng:p.coords.longitude});
+    mapI.setZoom(15);
+  });
+}
+
+// ── ADD FRIEND ──
+function openAddFriendModal(){
+  document.getElementById("afName").value="";
+  document.getElementById("afHandle").value="";
+  document.getElementById("afPreview").style.display="none";
+  document.getElementById("addFriendMo").classList.add("on");
+  // live preview as they type
+  document.getElementById("afName").oninput=function(){
+    const n=this.value.trim();
+    if(!n){document.getElementById("afPreview").style.display="none";return;}
+    const ini=n.split(" ").map(function(x){return x[0].toUpperCase();}).join("").slice(0,2);
+    const idx=Math.abs(n.charCodeAt(0)+n.charCodeAt(n.length-1))%AVCOLS.length;
+    const ac=AVCOLS[idx];
+    const prev=document.getElementById("afPreview");
+    prev.style.display="flex";
+    const avEl=document.getElementById("afAvPreview");
+    avEl.textContent=ini;
+    avEl.style.background=ac+"20";
+    avEl.style.color=ac;
+    avEl.style.border="2px solid "+ac+"40";
+    document.getElementById("afNamePreview").textContent=n;
+  };
+}
+
+function submitAddFriend(){
+  const name=document.getElementById("afName").value.trim();
+  if(!name)return;
+  // Add to extra friends list if not already present
+  const allFriends=[...new Set(groups.flatMap(g=>g.members)),...extraDmFriends];
+  if(!allFriends.includes(name)){
+    extraDmFriends.push(name);
+  }
+  closeMo("addFriendMo");
+  renderDmList();
+  // Switch to messages tab so they see the new friend
+  switchTab("dms");
+}
+
+initApp();
+</script>
+<!-- ADD FRIEND MODAL -->
+<div class="mo" id="addFriendMo">
+  <div class="modal">
+    <div class="mtitle">Add a Friend 🤝</div>
+    <div class="field">
+      <label>Name</label>
+      <input class="fi" id="afName" placeholder="e.g. Jordan B."/>
+    </div>
+    <div class="field">
+      <label>Username or phone <span style="color:var(--muted);font-weight:400;text-transform:none;font-size:11px">(online setup coming soon)</span></label>
+      <input class="fi" id="afHandle" placeholder="@username or +1 (555) 000-0000"/>
+    </div>
+    <div id="afPreview" style="display:none;margin-top:4px;padding:10px 12px;background:var(--blue-faint);border:1.5px solid var(--blue-pale);border-radius:var(--rs);align-items:center;gap:10px;">
+      <div id="afAvPreview" style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;"></div>
+      <div>
+        <div id="afNamePreview" style="font-size:13px;font-weight:700;color:var(--text)"></div>
+        <div style="font-size:11px;color:var(--muted)">Will appear in Messages</div>
+      </div>
+    </div>
+    <div class="macts">
+      <button class="bcnl" onclick="closeMo('addFriendMo')">Cancel</button>
+      <button class="bsub" onclick="submitAddFriend()">Add Friend ✓</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key={{ maps_api_key }}&callback=initMap" async defer></script>
+</body>
+</html>
