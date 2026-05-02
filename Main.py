@@ -1,13 +1,13 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse
-import datetime, uuid
+import datetime, uuid, os
 
 app = FastAPI(title="Pinned")
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+
+# Serve Index.HTML from the root directory (no templates subfolder needed)
+templates = Jinja2Templates(directory=".")
 
 GOOGLE_MAPS_API_KEY = "AIzaSyA_aIT0XI5pSi1c0dvRpk4i7GR4zEnecB8"
 
@@ -37,15 +37,14 @@ pins = [
 ]
 
 groups = [
-    {"id": "g1", "name": "Weekend Crew",   "emoji": "🎉", "color": "#5aabf5",
+    {"id": "g1", "name": "Weekend Crew",    "emoji": "🎉", "color": "#5aabf5",
      "members": ["Sophie L.", "Marcus K.", "Jamie R."]},
-    {"id": "g2", "name": "Foodies MTL",    "emoji": "🍕", "color": "#f59e0b",
+    {"id": "g2", "name": "Foodies MTL",     "emoji": "🍕", "color": "#f59e0b",
      "members": ["Sophie L.", "Alex B.", "Zoe K.", "Dan M.", "Priya S.", "Leo T."]},
-    {"id": "g3", "name": "Date Night Spots","emoji": "🌿", "color": "#a78bfa",
+    {"id": "g3", "name": "Date Night Spots", "emoji": "🌿", "color": "#a78bfa",
      "members": ["Sophie L."]},
 ]
 
-# Keyed by group id — completely separate per group
 chat_messages = {
     "g1": [
         {"author": "Sophie L.", "initials": "SL",
@@ -53,7 +52,7 @@ chat_messages = {
         {"author": "Marcus K.", "initials": "MK",
          "text": "Not yet — should I drop a pin if I go this week?", "time": "10:45 AM"},
         {"author": "You", "initials": "ME",
-         "text": "Yes! Pin everything 📍", "time": "10:47 AM"},
+         "text": "Yes! Pin everything!", "time": "10:47 AM"},
     ],
     "g2": [
         {"author": "Alex B.", "initials": "AB",
@@ -61,13 +60,13 @@ chat_messages = {
     ],
     "g3": [
         {"author": "Sophie L.", "initials": "SL",
-         "text": "Le Boudoir Friday?? 🍸", "time": "2d ago"},
+         "text": "Le Boudoir Friday?", "time": "2d ago"},
     ],
 }
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    return templates.TemplateResponse("index.html", {
+    return templates.TemplateResponse("Index.HTML", {
         "request": request,
         "maps_api_key": GOOGLE_MAPS_API_KEY
     })
@@ -92,12 +91,10 @@ async def add_pin(pin: dict):
     pins.append(pin)
     return pin
 
-# GET messages for a specific group
 @app.get("/api/chat/{group_id}")
 async def get_chat(group_id: str):
     return chat_messages.get(group_id, [])
 
-# POST a new message to a specific group
 @app.post("/api/chat/{group_id}")
 async def post_message(group_id: str, msg: dict):
     if group_id not in chat_messages:
