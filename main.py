@@ -2,14 +2,15 @@ from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse
+from dotenv import load_dotenv
 import datetime, uuid, os
 
 app = FastAPI(title="Pinned")
 
-# Serve Index.HTML from the root directory (no templates subfolder needed)
-templates = Jinja2Templates(directory=".")
+load_dotenv()
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
-GOOGLE_MAPS_API_KEY = "AIzaSyA_aIT0XI5pSi1c0dvRpk4i7GR4zEnecB8"
+templates = Jinja2Templates(directory="templates")
 
 pins = [
     {"id": "1", "lat": 45.5088, "lng": -73.5541, "name": "Blue State Coffee",
@@ -37,9 +38,9 @@ pins = [
 ]
 
 groups = [
-    {"id": "g1", "name": "Weekend Crew",    "emoji": "🎉", "color": "#5aabf5",
+    {"id": "g1", "name": "Weekend Crew",     "emoji": "🎉", "color": "#5aabf5",
      "members": ["Sophie L.", "Marcus K.", "Jamie R."]},
-    {"id": "g2", "name": "Foodies MTL",     "emoji": "🍕", "color": "#f59e0b",
+    {"id": "g2", "name": "Foodies MTL",      "emoji": "🍕", "color": "#f59e0b",
      "members": ["Sophie L.", "Alex B.", "Zoe K.", "Dan M.", "Priya S.", "Leo T."]},
     {"id": "g3", "name": "Date Night Spots", "emoji": "🌿", "color": "#a78bfa",
      "members": ["Sophie L."]},
@@ -66,7 +67,7 @@ chat_messages = {
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    return templates.TemplateResponse("Index.HTML", {
+    return templates.TemplateResponse("index.html", {
         "request": request,
         "maps_api_key": GOOGLE_MAPS_API_KEY
     })
@@ -87,7 +88,9 @@ async def add_group(group: dict):
 @app.post("/api/pins")
 async def add_pin(pin: dict):
     pin["id"] = str(uuid.uuid4())
-    pin["reviews"] = []
+    # Preserve reviews sent from frontend — do not wipe them
+    if "reviews" not in pin:
+        pin["reviews"] = []
     pins.append(pin)
     return pin
 
