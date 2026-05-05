@@ -4,58 +4,73 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green)
 
-A private social map app for friend groups. You and your friends drop pins on a real Google Map for places you have been to, places you love, or places worth knowing about. Each pin holds reviews from everyone in your group, so instead of reading strangers on Yelp or Google Maps, you see what your actual friends thought.
+Pinned is a private social map application for friend groups. Instead of reading reviews from strangers on Google Maps or Yelp, you and your friends build a shared map together. Every pin is a real place someone in your circle has been to, and every review is from someone you actually know.
+
+The project is currently in active development. Core features including the map, groups, chat, and pin system are fully functional locally. The next major phase of development focuses on real user accounts, friend connections, and live multi-user sync so that different people can use the app from their own devices.
 
 ---
 
-## Important Note
+## Features
 
-This project is not finished. The app currently runs locally as a single user with placeholder friends. The biggest missing piece is real multi-user support, meaning right now you cannot actually invite your real friends and have them log in on their own devices. That is the next major thing being built. Everything you see in the current version works as a demonstration of what the app will do once accounts and live sync are added.
+**Map and Pins**
 
-Do not open Index.HTML directly in a browser or through VS Code Live Server. The app will not work that way. It requires the Python backend to be running. See the setup section below.
+Click the Drop Pin button in the top right, tap any location on the map, and fill in the details. Each pin includes a place name, category, star rating, and a written review. Pins are grouped by your friend groups and show a badge indicating how many reviews they have received. Clicking a pin opens a review panel showing every review that group has left for that place.
 
----
+**Groups**
 
-## How It Works
+Open the sidebar and go to the Groups tab. Click Create New Group to set up a group, give it a name, choose an icon, and select which friends to add. You can have multiple groups for different social circles such as school friends, family, or coworkers. Each group has its own separate pin layer on the map and its own private chat.
 
-When you run the app, the Python backend (FastAPI) starts a local server. Your browser connects to that server and loads the full interface. Everything you do, dropping pins, sending chat messages, creating groups, goes through the backend which stores it all in memory while the server is running.
+**Group Chat**
 
-The map is powered by the Google Maps JavaScript API. Pins are rendered as custom markers on top of a real map. Each pin shows a badge with how many reviews it has. Clicking a pin slides up a panel showing every review your group left for that place.
+Click on any group from the Groups tab to open that group's chat. Messages are completely isolated between groups. A message sent in one group will never appear in another. The chat header shows the group name and clicking it reveals a dropdown list of all members.
 
-The sidebar has two tabs. The Groups tab shows all your groups and lets you click into each one, which slides open that group's private chat. The Messages tab shows all your friends as individual conversations, similar to direct messages on any other app. Each friend also shows a count of how many pins they have dropped, displayed like a streak counter.
+**Direct Messages**
 
-Groups are completely separate from each other. A message sent in one group will never appear in another. Each group has its own pin layer on the map, its own chat history, and its own member list.
+Switch to the Messages tab to see all your friends listed individually. Click any friend to open a 1-on-1 conversation. Each friend displays a pin count badge showing how many places they have reviewed, similar to a streak counter. Use the add friend button in the top right of the Messages tab to add new friends.
 
----
+**Pin Counts**
 
-## What Is Built So Far
-
-- Google Maps with a custom light blue style matching the app design
-- Drop a pin anywhere on the map by clicking, with a name, type, review, and star rating
-- Create groups and choose which friends are in each one
-- Per-group chat where each group is fully isolated from the others
-- Direct messages for 1-on-1 conversations with individual friends
-- Add new friends through the Messages tab
-- Pin count badges next to each friend in the DM list, showing how active they are
-- A personal pin counter in the top nav showing how many pins you have dropped
-- A member list dropdown inside each group chat
-- Slide-in panels for group chats and DM conversations so you never leave the map view
-- Click-away sidebar so the panel closes when you tap the map
+Your personal pin count is displayed in the top right of the navigation bar next to the Drop Pin button. This updates every time you drop a new pin.
 
 ---
 
-## What Is Not Built Yet
+## Current Status
 
-The following features are planned and will be added as the project continues.
+This version runs locally as a single user. The placeholder friends and sample data exist to demonstrate what the finished product will look like. Real accounts and live connections between multiple users are the next major milestone.
 
-- [ ] User accounts with sign up and login
-- [ ] Real friend invites via a link or username so actual people can join
-- [ ] Persistent storage using PostgreSQL with PostGIS for geographic queries, so data does not disappear when the server restarts
-- [ ] Live sync between multiple real users so everyone sees new pins appear in real time
+Do not open the HTML file directly in a browser or through a static file server such as VS Code Live Server. The application requires the Python backend to be running. All map interactions, chat messages, pin drops, and group management go through the FastAPI server.
+
+---
+
+## Roadmap
+
+The following features are planned for upcoming development phases.
+
+**Multi-User Support**
+- [ ] User accounts with registration and login
+- [ ] Secure authentication using JWT tokens or OAuth
+- [ ] Friend system with invite links and username search
+- [ ] Profile pages showing a user's pinned places and activity
+
+**Real-Time Sync**
+- [ ] Live map updates so all group members see new pins instantly
+- [ ] Real-time chat using WebSockets
+- [ ] Online presence indicators showing which friends are active
+
+**Data and Storage**
+- [ ] Persistent database using PostgreSQL with PostGIS for geographic queries
+- [ ] Data does not disappear when the server restarts
+- [ ] Pin history and user activity tracking
+
+**Additional Features**
 - [ ] Photo uploads attached to reviews
-- [ ] Push notifications when a friend drops a pin near your location
-- [ ] A mobile app built in React Native
-- [ ] Deployment to a public server so people can use it without running it locally
+- [ ] Push notifications when a friend drops a pin nearby
+- [ ] Search and filter pins by category, rating, or group member
+- [ ] Mobile application built in React Native
+
+**Deployment**
+- [ ] Host on a public server so users do not need to run it locally
+- [ ] Environment-based configuration for production vs development
 
 ---
 
@@ -66,37 +81,61 @@ The following features are planned and will be added as the project continues.
 | Backend | Python, FastAPI |
 | Frontend | Vanilla JavaScript, HTML, CSS |
 | Map | Google Maps JavaScript API |
-| Chat | HTTP polling per group |
-| Storage | In-memory (PostgreSQL + PostGIS planned) |
+| Chat | HTTP polling, WebSockets planned |
+| Storage | In-memory, PostgreSQL with PostGIS planned |
 
 ---
 
-## How to Run
+## Setup
 
-Requirements: Python 3.10 or higher
+**Requirements:** Python 3.10 or higher
+
+**Step 1. Clone the repository**
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/alexho01/Pinned.git
 cd Pinned
-
-# 2. Create a virtual environment
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# Mac and Linux
-source venv/bin/activate
-
-# 3. Install dependencies
-pip install -r Requirements.TXT
-
-# 4. Start the server
-python -m uvicorn Main:app --reload --port 8000
 ```
 
-Then open http://localhost:8000 in your browser.
+**Step 2. Create a virtual environment**
+
+```bash
+python -m venv venv
+```
+
+Windows:
+```bash
+venv\Scripts\activate
+```
+
+Mac and Linux:
+```bash
+source venv/bin/activate
+```
+
+**Step 3. Install dependencies**
+
+```bash
+pip install -r Requirements.txt
+```
+
+**Step 4. Set up your Google Maps API key**
+
+Create a file called `.env` in the root of the project and add the following line:
+
+```
+GOOGLE_MAPS_API_KEY=your_api_key_here
+```
+
+You can obtain a free API key from console.cloud.google.com. Make sure to enable the Maps JavaScript API in your Google Cloud project. The `.env` file is excluded from version control and will never be pushed to GitHub.
+
+**Step 5. Start the server**
+
+```bash
+python -m uvicorn main:app --reload --port 8000
+```
+
+Open your browser and go to http://localhost:8000.
 
 ---
 
@@ -104,9 +143,12 @@ Then open http://localhost:8000 in your browser.
 
 ```
 Pinned/
-|-- Main.py          FastAPI backend, all routes, chat API, pin and group storage
-|-- Index.HTML       Full frontend, map, sidebar, chat, modals, all in one file
-|-- Requirements.TXT Python dependencies
+|-- main.py              FastAPI backend, API routes, chat, pin and group storage
+|-- templates/
+|   |-- index.html       Full frontend including map, sidebar, chat, and modals
+|-- .env                 API keys, not included in version control
+|-- .gitignore
+|-- Requirements.txt     Python dependencies
 |-- README.md
 ```
 
@@ -114,6 +156,8 @@ Pinned/
 
 ## Contributing
 
-This is a personal project in early development. Feel free to fork it or open issues. Once multi-user support is complete, proper contribution guidelines will be added.
+This is a personal project in early development. Feel free to fork the repository or open issues with suggestions. Contribution guidelines will be added once the multi-user foundation is in place.
 
-Built by @alexho01
+---
+
+Built by [@alexho01](https://github.com/alexho01)
