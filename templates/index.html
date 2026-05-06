@@ -27,6 +27,36 @@
   --shadow-md:0 4px 28px rgba(90,171,245,0.18);
   --r:14px;--rs:9px;--rl:20px;
 }
+body.dark{
+  --white:#1a1f2e;
+  --bg:#13171f;
+  --surface2:#1e2435;
+  --surface3:#252c3d;
+  --blue-pale:#1e3a5a;
+  --blue-faint:#1a2840;
+  --border:#2a3348;
+  --border2:#334060;
+  --text:#e8edf5;
+  --text2:#8fa3be;
+  --muted:#4a6280;
+  --shadow:0 2px 16px rgba(0,0,0,0.3);
+  --shadow-md:0 4px 28px rgba(0,0,0,0.4);
+}
+body.dark{
+  --white:#1a1f2e;
+  --bg:#13171f;
+  --surface2:#1e2435;
+  --surface3:#252c3d;
+  --blue-pale:#1e3a5a;
+  --blue-faint:#1a2840;
+  --border:#2a3348;
+  --border2:#334060;
+  --text:#e8edf5;
+  --text2:#8fa3be;
+  --muted:#4a6280;
+  --shadow:0 2px 16px rgba(0,0,0,0.3);
+  --shadow-md:0 4px 28px rgba(0,0,0,0.4);
+}
 html,body{height:100%;background:var(--bg);font-family:'Nunito',sans-serif;color:var(--text);overflow:hidden;}
 .app{display:flex;flex-direction:column;height:100vh;}
 .hud{display:flex;flex:1;overflow:hidden;position:relative;}
@@ -173,6 +203,7 @@ html,body{height:100%;background:var(--bg);font-family:'Nunito',sans-serif;color
 .md-row{display:flex;align-items:center;gap:9px;padding:7px 12px;}
 .md-row:last-child{padding-bottom:10px;}
 
+
 /* Add friend btn */
 .add-friend-btn{
   width:30px;height:30px;border-radius:50%;
@@ -285,6 +316,16 @@ textarea.fi{resize:none;height:76px;}
 
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:var(--blue-pale);border-radius:2px;}
+
+/* Settings modal */
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1.5px solid var(--border);}
+.settings-row:last-child{border-bottom:none;}
+.settings-label{font-size:14px;font-weight:600;color:var(--text);}
+.settings-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.toggle{width:42px;height:24px;border-radius:12px;background:var(--border2);border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.toggle.on{background:var(--blue-mid);}
+.toggle-knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+.toggle.on .toggle-knob{transform:translateX(18px);}
 </style>
 </head>
 <body>
@@ -299,13 +340,13 @@ textarea.fi{resize:none;height:76px;}
     <span style="font-size:9px;color:var(--muted);margin-left:2px">▾</span>
   </div>
   <div class="nav-right">
-    <button class="nav-btn" onclick="toggleSidebar()">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      Menu
+    <button class="nav-btn primary" onclick="openChat()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Chat
     </button>
-    <button class="nav-btn primary" onclick="openPinModal()">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      Drop Pin
+    <button class="nav-btn" onclick="openSettings()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Settings
     </button>
     <div style="display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--blue-faint);border:1.5px solid var(--blue-pale);border-radius:10px;padding:4px 10px;min-width:44px;">
       <span style="font-size:16px;font-weight:800;color:var(--blue-deep);line-height:1" id="myPinCount">0</span>
@@ -416,7 +457,7 @@ textarea.fi{resize:none;height:76px;}
         <div class="rmeta"><span class="raddr" id="rgrp"></span><span class="rtag" id="rtag"></span></div>
       </div>
       <div class="rreviews" id="rreviews"></div>
-      <div class="rfooter"><button class="arbtn" onclick="openPinModal()">+ Add your review</button></div>
+      <div class="rfooter"><button class="arbtn" onclick="closeReview();openPinModal()">+ Add your review</button></div>
     </div>
   </div>
 </div>
@@ -451,7 +492,7 @@ textarea.fi{resize:none;height:76px;}
     </div>
     <div class="macts">
       <button class="bcnl" onclick="closeMo('pinMo')">Cancel</button>
-      <button class="bsub" onclick="submitPin()">Drop it 📍</button>
+      <button class="bsub" onclick="submitPin()">Drop Pin</button>
     </div>
   </div>
 </div>
@@ -692,7 +733,11 @@ window.initMap=function(){
       {featureType:"landscape",elementType:"geometry",stylers:[{color:"#eaf3ff"}]},
     ]
   });
-  mapI.addListener("click",e=>{pendingLL=e.latLng;openPinModal();});
+  mapI.addListener("click",function(e){
+    // Clicking the map opens the pin form with this location pre-selected
+    pendingLL=e.latLng;
+    openPinModal();
+  });
   renderPins();
 };
 
@@ -715,7 +760,7 @@ function renderPins(){
       position:{lat:pin.lat,lng:pin.lng},map:mapI,title:pin.name,
       icon:{url:"data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svg),scaledSize:new google.maps.Size(54,62)}
     });
-    mk.addListener("click",()=>showReview(pin));
+    mk.addListener("click",function(){showReview(pin);});
     markers.push(mk);
   });
 }
@@ -898,29 +943,50 @@ document.querySelectorAll(".sbtnx").forEach(b=>{
     document.querySelectorAll(".sbtnx").forEach((s,i)=>s.classList.toggle("on",i<selStars));
   };
 });
-function openPinModal(){fillPGrp();document.getElementById("pinMo").classList.add("on");}
+function openPinModal(){
+  fillPGrp();
+  document.getElementById("pname2").value="";
+  document.getElementById("prev").value="";
+  selStars=5;
+  document.querySelectorAll(".sbtnx").forEach(function(s,i){s.classList.toggle("on",i<5);});
+  document.getElementById("pinMo").classList.add("on");
+}
+
 function updateMyPinCount(){
   const n=pins.filter(function(p){return p.reviews&&p.reviews.some(function(r){return r.author==="You";});}).length;
   document.getElementById("myPinCount").textContent=n;
 }
+
+// Step 1: User clicks "Drop it" -- save form data and ask them to tap map
 async function submitPin(){
   const name=document.getElementById("pname2").value.trim();
-  if(!name)return;
-  const lat=pendingLL?pendingLL.lat():45.5088;
-  const lng=pendingLL?pendingLL.lng():-73.5541;
-  const pin={lat,lng,name,
+  if(!name){
+    document.getElementById("pname2").style.border="1.5px solid #ec4899";
+    setTimeout(function(){document.getElementById("pname2").style.border="";},1500);
+    return;
+  }
+  if(!pendingLL){
+    alert("Please tap a location on the map first.");
+    return;
+  }
+  const pin={
+    lat:pendingLL.lat(),
+    lng:pendingLL.lng(),
+    name:name,
     type:document.getElementById("ptype").value,
     group:document.getElementById("pgrp").value,
-    reviews:[{author:"You",initials:"ME",color:"#5aabf5",stars:selStars,
-      text:document.getElementById("prev").value||"Pinned it!",time:"Just now"}]};
+    reviews:[{author:"You",initials:"ME",color:"#5aabf5",
+      stars:selStars,
+      text:document.getElementById("prev").value||"Pinned it!",
+      time:"Just now"}]
+  };
+  closeMo("pinMo");
   const saved=await fetch("/api/pins",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(pin)}).then(r=>r.json());
   pins.push(saved);
   renderGroups();
   renderPins();
   updateMyPinCount();
-  closeMo("pinMo");
-  document.getElementById("pname2").value="";
-  document.getElementById("prev").value="";
+  renderDmList();
   pendingLL=null;
 }
 
@@ -975,7 +1041,9 @@ async function submitGroup(){
   closeMo("cgMo");
 }
 
-function closeMo(id){document.getElementById(id).classList.remove("on");}
+function closeMo(id){
+  document.getElementById(id).classList.remove("on");
+}
 // close on backdrop click
 document.querySelectorAll(".mo").forEach(o=>{
   o.onclick=e=>{if(e.target===o)o.classList.remove("on");};
@@ -1027,6 +1095,53 @@ function submitAddFriend(){
   switchTab("dms");
 }
 
+// ── SETTINGS ──
+function openSettings(){
+  document.getElementById("settingsMo").classList.add("on");
+}
+
+let darkMode=false;
+function toggleDarkMode(){
+  darkMode=!darkMode;
+  document.body.classList.toggle("dark", darkMode);
+  document.getElementById("darkToggle").classList.toggle("on", darkMode);
+  // Update Google Maps style
+  if(mapI){
+    mapI.setOptions({styles: darkMode ? [
+      {elementType:"geometry",stylers:[{color:"#1a1f2e"}]},
+      {elementType:"labels.text.fill",stylers:[{color:"#4a6280"}]},
+      {elementType:"labels.text.stroke",stylers:[{color:"#13171f"}]},
+      {featureType:"road",elementType:"geometry",stylers:[{color:"#252c3d"}]},
+      {featureType:"road",elementType:"geometry.stroke",stylers:[{color:"#1a1f2e"}]},
+      {featureType:"road.highway",elementType:"geometry",stylers:[{color:"#2a3348"}]},
+      {featureType:"water",elementType:"geometry",stylers:[{color:"#0d1520"}]},
+      {featureType:"poi.park",elementType:"geometry",stylers:[{color:"#1a2e1a"}]},
+      {featureType:"poi.business",stylers:[{visibility:"off"}]},
+      {featureType:"transit",stylers:[{visibility:"off"}]},
+      {featureType:"landscape",elementType:"geometry",stylers:[{color:"#13171f"}]},
+    ] : [
+      {elementType:"geometry",stylers:[{color:"#e8f4fd"}]},
+      {elementType:"labels.text.fill",stylers:[{color:"#4a6280"}]},
+      {elementType:"labels.text.stroke",stylers:[{color:"#ffffff"}]},
+      {featureType:"road",elementType:"geometry",stylers:[{color:"#ffffff"}]},
+      {featureType:"road",elementType:"geometry.stroke",stylers:[{color:"#cce0f7"}]},
+      {featureType:"road.highway",elementType:"geometry",stylers:[{color:"#b0d4f0"}]},
+      {featureType:"road.highway",elementType:"geometry.stroke",stylers:[{color:"#8bbde0"}]},
+      {featureType:"water",elementType:"geometry",stylers:[{color:"#a8d4f0"}]},
+      {featureType:"poi.park",elementType:"geometry",stylers:[{color:"#c8ebd0"}]},
+      {featureType:"poi.business",stylers:[{visibility:"off"}]},
+      {featureType:"transit",stylers:[{visibility:"off"}]},
+      {featureType:"landscape",elementType:"geometry",stylers:[{color:"#eaf3ff"}]},
+    ]});
+  }
+}
+
+// ── CHAT BUTTON ──
+function openChat(){
+  showSidebar();
+  switchTab("dms");
+}
+
 initApp();
 </script>
 <!-- ADD FRIEND MODAL -->
@@ -1051,6 +1166,25 @@ initApp();
     <div class="macts">
       <button class="bcnl" onclick="closeMo('addFriendMo')">Cancel</button>
       <button class="bsub" onclick="submitAddFriend()">Add Friend ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="mo" id="settingsMo">
+  <div class="modal" style="width:340px;">
+    <div class="mtitle">Settings</div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Dark Mode</div>
+        <div class="settings-sub">Switch to a darker colour scheme</div>
+      </div>
+      <button class="toggle" id="darkToggle" onclick="toggleDarkMode()">
+        <div class="toggle-knob"></div>
+      </button>
+    </div>
+    <div class="macts" style="margin-top:16px;">
+      <button class="bsub" onclick="closeMo('settingsMo')">Done</button>
     </div>
   </div>
 </div>
