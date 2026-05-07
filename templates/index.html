@@ -317,6 +317,53 @@ textarea.fi{resize:none;height:76px;}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:var(--blue-pale);border-radius:2px;}
 
+/* AUTH SCREEN */
+.auth-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  z-index:999;flex-direction:column;gap:0;
+}
+.auth-screen.hidden{display:none;}
+.auth-card{
+  background:var(--white);border:1.5px solid var(--border2);
+  border-radius:var(--rl);padding:36px 32px;width:100%;max-width:400px;
+  box-shadow:var(--shadow-md);
+}
+.auth-logo{
+  font-family:'Fraunces',serif;font-style:italic;font-weight:700;
+  font-size:32px;color:var(--blue-mid);text-align:center;
+  margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.auth-tagline{font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px;}
+.auth-tabs{display:flex;gap:0;margin-bottom:24px;background:var(--bg);border-radius:var(--rs);padding:3px;}
+.auth-tab{
+  flex:1;padding:9px;text-align:center;font-size:13px;font-weight:700;
+  border-radius:7px;cursor:pointer;transition:all .2s;color:var(--muted);
+}
+.auth-tab.on{background:var(--white);color:var(--blue-mid);box-shadow:0 1px 6px rgba(90,171,245,0.15);}
+.auth-panel{display:none;flex-direction:column;gap:12px;}
+.auth-panel.on{display:flex;}
+.auth-field{display:flex;flex-direction:column;gap:5px;}
+.auth-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;}
+.auth-input{
+  background:var(--bg);border:1.5px solid var(--border2);
+  border-radius:var(--rs);padding:10px 13px;color:var(--text);
+  font-size:14px;font-family:'Nunito',sans-serif;outline:none;transition:border-color .2s;
+}
+.auth-input:focus{border-color:var(--blue);}
+.auth-btn{
+  background:var(--blue-mid);color:#fff;border:none;
+  border-radius:var(--rs);padding:13px;font-size:14px;font-weight:700;
+  font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;
+  box-shadow:0 2px 10px rgba(61,148,232,0.28);margin-top:4px;
+}
+.auth-btn:hover{background:var(--blue-deep);}
+.auth-error{
+  background:#fff0f3;border:1.5px solid #fecdd3;border-radius:var(--rs);
+  padding:9px 12px;font-size:13px;color:#be123c;display:none;
+}
+.auth-error.on{display:block;}
+
 /* Settings modal */
 .settings-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1.5px solid var(--border);}
 .settings-row:last-child{border-bottom:none;}
@@ -329,6 +376,52 @@ textarea.fi{resize:none;height:76px;}
 </style>
 </head>
 <body>
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">📍 pinned</div>
+    <div class="auth-tagline">Your private map for places that matter to your crew.</div>
+    <div class="auth-tabs">
+      <div class="auth-tab on" onclick="switchAuthTab('login')">Sign In</div>
+      <div class="auth-tab" onclick="switchAuthTab('register')">Create Account</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="auth-panel on" id="authLogin">
+      <div class="auth-field">
+        <label class="auth-label">Username</label>
+        <input class="auth-input" id="loginUsername" placeholder="your username" autocomplete="username"/>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="loginPassword" type="password" placeholder="your password" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')submitLogin()"/>
+      </div>
+      <div class="auth-error" id="loginError"></div>
+      <button class="auth-btn" onclick="submitLogin()">Sign In</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="auth-panel" id="authRegister">
+      <div class="auth-field">
+        <label class="auth-label">Username</label>
+        <input class="auth-input" id="regUsername" placeholder="choose a username" autocomplete="username"/>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" id="regEmail" type="email" placeholder="your email" autocomplete="email"/>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="regPassword" type="password" placeholder="at least 6 characters" autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')submitRegister()"/>
+      </div>
+      <div class="auth-error" id="regError"></div>
+      <button class="auth-btn" onclick="submitRegister()">Create Account</button>
+    </div>
+  </div>
+</div>
+
 <div class="app">
 
 <!-- NAV -->
@@ -540,10 +633,92 @@ const ALL_FRIENDS=[
   {n:"Priya S.",i:"PS"},{n:"Leo T.",i:"LT"},{n:"Mia C.",i:"MC"},{n:"Noah P.",i:"NP"},
 ];
 
+// ── AUTH TOKEN ──
+let authToken = localStorage.getItem("pinned_token") || null;
+let currentUser = JSON.parse(localStorage.getItem("pinned_user") || "null");
+
+function apiHeaders(){
+  return {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + authToken
+  };
+}
+
+function switchAuthTab(tab){
+  document.querySelectorAll(".auth-tab").forEach((t,i)=>t.classList.toggle("on",(tab==="login"?i===0:i===1)));
+  document.getElementById("authLogin").classList.toggle("on", tab==="login");
+  document.getElementById("authRegister").classList.toggle("on", tab==="register");
+}
+
+async function submitLogin(){
+  const username=document.getElementById("loginUsername").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  const errEl=document.getElementById("loginError");
+  errEl.classList.remove("on");
+  if(!username||!password){errEl.textContent="Please fill in all fields.";errEl.classList.add("on");return;}
+  try{
+    const res=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username,password})});
+    const data=await res.json();
+    if(!res.ok){errEl.textContent=data.detail||"Login failed.";errEl.classList.add("on");return;}
+    authToken=data.token;
+    currentUser=data.user;
+    localStorage.setItem("pinned_token",authToken);
+    localStorage.setItem("pinned_user",JSON.stringify(currentUser));
+    document.getElementById("authScreen").classList.add("hidden");
+    initApp();
+  }catch(e){errEl.textContent="Could not connect to server.";errEl.classList.add("on");}
+}
+
+async function submitRegister(){
+  const username=document.getElementById("regUsername").value.trim();
+  const email=document.getElementById("regEmail").value.trim();
+  const password=document.getElementById("regPassword").value;
+  const errEl=document.getElementById("regError");
+  errEl.classList.remove("on");
+  if(!username||!email||!password){errEl.textContent="Please fill in all fields.";errEl.classList.add("on");return;}
+  try{
+    const res=await fetch("/api/auth/register",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username,email,password})});
+    const data=await res.json();
+    if(!res.ok){errEl.textContent=data.detail||"Registration failed.";errEl.classList.add("on");return;}
+    authToken=data.token;
+    currentUser=data.user;
+    localStorage.setItem("pinned_token",authToken);
+    localStorage.setItem("pinned_user",JSON.stringify(currentUser));
+    document.getElementById("authScreen").classList.add("hidden");
+    initApp();
+  }catch(e){errEl.textContent="Could not connect to server.";errEl.classList.add("on");}
+}
+
+function logout(){
+  localStorage.removeItem("pinned_token");
+  localStorage.removeItem("pinned_user");
+  authToken=null; currentUser=null;
+  location.reload();
+}
+
 async function initApp(){
+  // If no token, show auth screen and stop
+  if(!authToken){
+    document.getElementById("authScreen").classList.remove("hidden");
+    return;
+  }
+  // Verify token is still valid
+  const check=await fetch("/api/auth/me",{headers:apiHeaders()});
+  if(!check.ok){
+    localStorage.removeItem("pinned_token");
+    localStorage.removeItem("pinned_user");
+    authToken=null;
+    document.getElementById("authScreen").classList.remove("hidden");
+    return;
+  }
+  // Token valid -- hide auth screen and load app
+  document.getElementById("authScreen").classList.add("hidden");
+  currentUser=await check.json();
   const [g,p]=await Promise.all([
-    fetch("/api/groups").then(r=>r.json()),
-    fetch("/api/pins").then(r=>r.json())
+    fetch("/api/groups",{headers:apiHeaders()}).then(r=>r.json()),
+    fetch("/api/pins",{headers:apiHeaders()}).then(r=>r.json())
   ]);
   groups=g; pins=p;
   renderGroups();
@@ -851,7 +1026,7 @@ async function loadChat(gid){
   renderChatUI(gid);
 
   // Fetch full history from server and merge (avoids wipe on switch-back)
-  const fresh=await fetch("/api/chat/"+gid).then(r=>r.json()).catch(function(){return null;});
+  const fresh=await fetch("/api/chat/"+gid,{headers:apiHeaders()}).then(r=>r.json()).catch(function(){return null;});
   if(!fresh||currentChatGid!==gid)return;
   // Replace cache with server truth, then re-render only if something changed
   if(JSON.stringify(fresh)!==JSON.stringify(msgCache[gid])){
@@ -862,7 +1037,7 @@ async function loadChat(gid){
   // Poll every 2s — only append genuinely new server messages
   pollTimer=setInterval(async function(){
     if(currentChatGid!==gid){clearInterval(pollTimer);return;}
-    const latest=await fetch("/api/chat/"+gid).then(r=>r.json()).catch(function(){return null;});
+    const latest=await fetch("/api/chat/"+gid,{headers:apiHeaders()}).then(r=>r.json()).catch(function(){return null;});
     if(!latest||currentChatGid!==gid)return;
     const cached=msgCache[gid]||[];
     if(latest.length>cached.length){
@@ -900,7 +1075,7 @@ async function sendMsg(){
   // POST to server
   await fetch("/api/chat/"+gid,{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers:apiHeaders(),
     body:JSON.stringify(msg)
   }).catch(function(){});
 }
@@ -981,7 +1156,7 @@ async function submitPin(){
       time:"Just now"}]
   };
   closeMo("pinMo");
-  const saved=await fetch("/api/pins",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(pin)}).then(r=>r.json());
+  const saved=await fetch("/api/pins",{method:"POST",headers:apiHeaders(),body:JSON.stringify(pin)}).then(r=>r.json());
   pins.push(saved);
   renderGroups();
   renderPins();
@@ -1033,7 +1208,7 @@ async function submitGroup(){
   const g={id:"g"+Date.now(),name,emoji:selEmoji,members:[...selFriends],color:GCOLS[groups.length%GCOLS.length]};
   // save to backend
   try{
-    await fetch("/api/groups",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(g)});
+    await fetch("/api/groups",{method:"POST",headers:apiHeaders(),body:JSON.stringify(g)});
   }catch(e){}
   groups.push(g);
   renderGroups();fillPGrp();
@@ -1184,6 +1359,7 @@ initApp();
       </button>
     </div>
     <div class="macts" style="margin-top:16px;">
+      <button class="bcnl" onclick="logout()" style="color:#be123c;border-color:#fecdd3;">Sign Out</button>
       <button class="bsub" onclick="closeMo('settingsMo')">Done</button>
     </div>
   </div>

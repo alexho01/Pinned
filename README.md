@@ -47,28 +47,33 @@ Do not open the HTML file directly in a browser or through a static file server 
 The following features are planned for upcoming development phases.
 
 **Multi-User Support**
+
 - [ ] User accounts with registration and login
 - [ ] Secure authentication using JWT tokens or OAuth
 - [ ] Friend system with invite links and username search
 - [ ] Profile pages showing a user's pinned places and activity
 
 **Real-Time Sync**
+
 - [ ] Live map updates so all group members see new pins instantly
 - [ ] Real-time chat using WebSockets
 - [ ] Online presence indicators showing which friends are active
 
 **Data and Storage**
+
 - [ ] Persistent database using PostgreSQL with PostGIS for geographic queries
 - [ ] Data does not disappear when the server restarts
 - [ ] Pin history and user activity tracking
 
 **Additional Features**
+
 - [ ] Photo uploads attached to reviews
 - [ ] Push notifications when a friend drops a pin nearby
 - [ ] Search and filter pins by category, rating, or group member
 - [ ] Mobile application built in React Native
 
 **Deployment**
+
 - [ ] Host on a public server so users do not need to run it locally
 - [ ] Environment-based configuration for production vs development
 
@@ -76,13 +81,13 @@ The following features are planned for upcoming development phases.
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Backend | Python, FastAPI |
-| Frontend | Vanilla JavaScript, HTML, CSS |
-| Map | Google Maps JavaScript API |
-| Chat | HTTP polling, WebSockets planned |
-| Storage | In-memory, PostgreSQL with PostGIS planned |
+| Layer    | Technology                                 |
+| -------- | ------------------------------------------ |
+| Backend  | Python, FastAPI                            |
+| Frontend | Vanilla JavaScript, HTML, CSS              |
+| Map      | Google Maps JavaScript API                 |
+| Chat     | HTTP polling, WebSockets planned           |
+| Storage  | In-memory, PostgreSQL with PostGIS planned |
 
 ---
 
@@ -104,11 +109,13 @@ python -m venv venv
 ```
 
 Windows:
+
 ```bash
 venv\Scripts\activate
 ```
 
 Mac and Linux:
+
 ```bash
 source venv/bin/activate
 ```
