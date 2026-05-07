@@ -5,67 +5,77 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green)
 ![Railway](https://img.shields.io/badge/deployed-Railway-blueviolet)
 
-Pinned is a private social map app for friend groups. Instead of reading reviews from strangers on Google Maps or Yelp, you and your friends build a shared map together. Every pin is a real place someone in your circle has been to, and every review is from someone you actually trust.
+Pinned is a private social map app for friend groups. Instead of relying on reviews from strangers, users can create shared maps with people they know. Friends can drop pins, write reviews, create groups, send messages, and build a trusted collection of places together.
 
-Live at: https://pinned-production.up.railway.app
-
----
-
-## How to Use the App
-
-**Creating an Account**
-
-Open the app and click Create Account. Enter a username, email, and password of at least 6 characters. Your account is stored in a real database so it persists across sessions.
-
-**Dropping a Pin**
-
-Tap anywhere on the map to open the pin form. Fill in the place name, choose a category such as Coffee, Bar, or Restaurant, select which group to share it with, write a short review, and give it a star rating. Hit Drop Pin and the pin appears on the map for everyone in that group.
-
-**Groups**
-
-Open the sidebar by clicking Menu and go to the Groups tab. Click Create New Group to make a new one, give it a name, choose an icon, and add friends by username. Each group has its own separate map layer and its own private chat. Click a group card to open that group's chat directly.
-
-**Group Chat**
-
-Click any group to open its private chat. Messages are completely isolated between groups. Click the group name in the chat header to see a dropdown of all members.
-
-**Direct Messages**
-
-Click the Chat button in the top right of the nav bar. This opens the Messages tab where every friend from your groups is listed individually. Click any name to open a 1-on-1 conversation. Each friend shows a pin count badge indicating how many places they have reviewed.
-
-**Settings**
-
-Click the Settings button in the nav to toggle Dark Mode, which switches the entire app and map to a dark colour scheme. You can also sign out from the settings panel.
+Live app: https://pinned-production.up.railway.app
 
 ---
 
-## What Is Built
+## Overview
 
-- Real user accounts with registration and login using JWT authentication
-- Passwords are hashed with bcrypt and never stored in plain text
-- Google Maps integration with a custom light blue style
-- Drop pins anywhere on the map with a name, category, review, and star rating
-- Private groups with member management and invite by username
-- Per-group chat that is completely isolated between groups
-- Direct messages for 1-on-1 conversations
-- Pin count badges on friends in the DM list
-- Personal pin counter in the nav bar
-- Dark mode toggle that reskins the full app and map
-- PostgreSQL database hosted on Railway for persistent storage
-- Deployed live on Railway so anyone can use it
+Pinned combines a social messaging app with an interactive map. Users can create an account, add friends, form private groups, and save places to a shared Google Map. Each pin includes a place name, category, rating, and personal review. Groups have their own private chats and map layers, while direct messages allow friends to communicate individually.
+
+The goal of Pinned is to make place recommendations more personal. Instead of searching through anonymous ratings, users can see where their friends have been and what they actually thought about those places.
 
 ---
 
-## What Is Still Being Built
+## Features
 
-- [ ] Live map sync so pins appear instantly for all group members without refreshing
-- [x] Real-time chat using WebSockets instead of polling
-- [ ] Invite friends via a shareable link rather than typing their username
-- [ ] Photo uploads attached to pin reviews
-- [ ] Push notifications when a friend drops a pin nearby
-- [ ] User profile pages showing all pins and activity
-- [ ] Search and filter pins by category, rating, or group member
-- [ ] Mobile app built in React Native
+### User Accounts and Authentication
+
+- User registration and login
+- JWT-based authentication
+- Password hashing with bcrypt
+- Persistent user sessions through local storage
+- User profile modal with account information and personal pin count
+
+### Interactive Map
+
+- Google Maps JavaScript API integration
+- Custom styled map interface
+- Drop pins directly by clicking on the map
+- Add a place name, category, star rating, and review
+- Pins are connected to specific groups
+- Group members can view shared pins on the map
+- Pin and review updates appear without requiring a full page refresh
+
+### Friends System
+
+- Add friends by username
+- Prevents users from adding themselves
+- Prevents duplicate friend requests
+- Prevents adding users who are already friends
+- Friend requests appear as notifications
+- Users can accept or decline incoming friend requests
+- Users can unfriend or block others from the three-dot friend menu
+- Blocked users cannot continue sending requests
+
+### Groups
+
+- Create private groups with selected friends
+- Add confirmed friends when creating a group
+- Add new friends to an existing group without remaking it
+- View group members by clicking the group name
+- Leave a group from the member dropdown
+- Each group has its own private map layer and chat
+
+### Messaging
+
+- Group chat for each private group
+- Direct messages between friends
+- Real-time messaging using WebSockets
+- Notification badges for unread group messages and direct messages
+- Notifications remain visible until the user opens the relevant chat
+- Chat previews and pin counts are shown in the messages list
+
+### Interface
+
+- Responsive sidebar layout
+- Groups and Messages tabs
+- Profile button with pin count badge
+- Settings panel
+- Dark mode toggle
+- Custom modals for pins, groups, friends, settings, and profile
 
 ---
 
@@ -74,143 +84,81 @@ Click the Settings button in the nav to toggle Dark Mode, which switches the ent
 | Layer | Technology |
 |---|---|
 | Backend | Python, FastAPI |
-| Frontend | Vanilla JavaScript, HTML, CSS |
+| Frontend | HTML, CSS, Vanilla JavaScript |
 | Map | Google Maps JavaScript API |
-| Auth | JWT tokens, bcrypt password hashing |
-| Database | PostgreSQL hosted on Railway |
-| Chat | HTTP polling |
+| Authentication | JWT, bcrypt |
+| Database | PostgreSQL |
+| ORM | SQLAlchemy |
+| Real-time Updates | WebSockets |
 | Deployment | Railway |
 
 ---
 
 ## Architecture
 
-<img width="1101" height="815" alt="Arc" src="https://github.com/user-attachments/assets/bda2822d-b360-40d4-b950-fe584a272d8f" />
+<img width="1101" height="815" alt="Pinned architecture diagram" src="https://github.com/user-attachments/assets/bda2822d-b360-40d4-b950-fe584a272d8f" />
 
-The app is split into a frontend served by the backend and a set of API endpoints that handle all data operations.
+Pinned uses a FastAPI backend that serves the frontend and handles all API requests. The frontend is built as a single HTML file with embedded CSS and JavaScript. It communicates with the backend through REST API calls and WebSocket connections.
 
-**Request flow**
+### Request Flow
 
-When a user opens the app, their browser requests the page from the FastAPI backend which serves index.html via Jinja2 templating. The Google Maps JavaScript API is loaded directly by the browser using the API key injected into the HTML by the server. All subsequent interactions such as dropping pins, sending messages, and creating groups go through REST API calls to the backend with a JWT token in the Authorization header.
+When a user opens the app, FastAPI serves `index.html` through Jinja2 templating. The backend injects the Google Maps API key into the page. After login, the frontend stores the JWT token and sends it in the Authorization header for protected requests.
 
-**Components**
+User actions such as dropping pins, creating groups, sending messages, accepting friend requests, and blocking users are sent to the backend through API routes. Real-time actions such as messages, friend notifications, and pin updates are delivered through WebSockets.
 
-The backend consists of four Python files. main.py contains all the API routes and the WebSocket connection manager. models.py defines the SQLAlchemy database models for users, groups, pins, reviews, and messages. database.py manages the connection to PostgreSQL using the DATABASE_URL environment variable. auth.py handles password hashing with bcrypt and JWT token creation and validation.
+### Backend Components
 
-The frontend is a single HTML file served from the templates folder. It contains all the JavaScript, CSS, and HTML for the map, sidebar, chat, modals, and auth screens. It communicates with the backend via fetch calls and maintains the auth token in localStorage.
+The backend is organized into several Python files:
 
-**Database**
+- `main.py` contains the FastAPI routes, WebSocket logic, and main application behavior
+- `models.py` defines SQLAlchemy database models
+- `database.py` manages the PostgreSQL database connection
+- `auth.py` handles password hashing, JWT creation, and authentication checks
 
-PostgreSQL is hosted on Railway. The tables are created automatically on first startup via SQLAlchemy's create_all. The schema has seven tables: users, groups, group_members, pins, reviews, messages, and friendships.
+### Frontend Components
 
-**Authentication**
+The frontend is located in `templates/index.html`. It includes:
 
-On registration, passwords are hashed with bcrypt before being stored. On login, the backend returns a
+- Authentication screen
+- Google Map interface
+- Sidebar navigation
+- Group list and group chat
+- Direct message list and DM chat
+- Friend request interface
+- Pin creation modal
+- Profile and settings modals
+- Client-side WebSocket handling
+
+### Database
+
+The app uses PostgreSQL hosted on Railway. SQLAlchemy models are used to define and interact with the database tables.
+
+Main tables include:
+
+- `users`
+- `groups`
+- `group_members`
+- `pins`
+- `reviews`
+- `messages`
+- `friend_requests`
+- `friendships`
+- `blocked_users`
 
 ---
 
 ## Running Locally
 
-The app requires the Python backend to be running. Do not open the HTML file directly or use VS Code Live Server as those will not work.
+The app requires the FastAPI backend to be running. Do not open the HTML file directly and do not use VS Code Live Server. The frontend depends on backend API routes, authentication, database access, and server-rendered values.
 
-**Requirements:** Python 3.12 or higher
+### Requirements
 
-**Step 1. Clone the repository**
+- Python 3.12 or higher
+- PostgreSQL database
+- Google Maps API key
+
+### Step 1. Clone the Repository
 
 ```bash
 git clone https://github.com/alexho01/Pinned.git
 cd Pinned
-```
-
-**Step 2. Create a virtual environment**
-
-Windows:
-```powershell
-python -m venv venv
-venv\Scripts\activate
-```
-
-Mac and Linux:
-```bash
-python -m venv venv
-source venv/bin/activate
-```
-
-**Step 3. Install dependencies**
-
-```bash
-pip install -r requirements.txt
-```
-
-**Step 4. Create a .env file**
-
-Create a file called `.env` in the root of the project with the following:
-
-```
-GOOGLE_MAPS_API_KEY=your_google_maps_key_here
-DATABASE_URL=your_railway_postgres_internal_url_here
-DATABASE_PUBLIC_URL=your_railway_postgres_public_url_here
-SECRET_KEY=any_long_random_string_here
-```
-
-To get a Google Maps API key, go to console.cloud.google.com and enable the Maps JavaScript API.
-
-To get the database URLs, create a free PostgreSQL database on railway.app and copy the connection strings from the Variables tab.
-
-**Step 5. Start the server**
-
-```bash
-python -m uvicorn main:app --reload --port 8000
-```
-
-Open your browser and go to http://localhost:8000.
-
-The server must stay running in the terminal for the app to work. If you close the terminal the app will stop responding. To keep it running, leave the terminal open or run it in a background process.
-
-If you stop the server and want to start it again, open a new terminal in your Pinned folder and run:
-
-```powershell
-venv\Scripts\activate
-python -m uvicorn main:app --reload --port 8000
-```
-
-You do not need to reinstall dependencies each time. Only the activate and uvicorn commands are needed on subsequent runs.
-
----
-
-## Using the Live Version Instead
-
-If you do not want to run it locally, the app is already deployed and running at:
-
-https://pinned-production.up.railway.app
-
-Anyone can create an account and use it from any device without setting anything up. The server on Railway runs 24 hours a day as long as the Railway project is active.
-
----
-
-## Project Structure
-
-```
-Pinned/
-|-- main.py          FastAPI backend, all API routes, auth, groups, pins, chat
-|-- models.py        SQLAlchemy database models
-|-- database.py      Database connection and session management
-|-- auth.py          Password hashing and JWT token handling
-|-- templates/
-|   |-- index.html   Full frontend including map, sidebar, chat, and modals
-|-- requirements.txt Python dependencies
-|-- nixpacks.toml    Railway build configuration
-|-- .env             Secret keys, not in version control
-|-- .gitignore
-|-- README.md
-```
-
----
-
-## Environment Variables
-
-The .env file is never pushed to GitHub. Anyone cloning this repo needs to create their own .env with their own keys. The app will not start without a valid DATABASE_URL and GOOGLE_MAPS_API_KEY.
-
----
-
-Built by [@alexho01](https://github.com/alexho01)
