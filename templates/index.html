@@ -225,6 +225,10 @@ html,body{height:100%;background:var(--bg);font-family:'Nunito',sans-serif;color
 .md-add-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--blue-pale);background:var(--blue-faint);color:var(--blue-mid);font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .md-add-btn:hover{background:var(--blue-pale);border-color:var(--blue);}
 .md-empty{font-size:12px;color:var(--muted);padding:4px 0;}
+.md-leave-wrap{border-top:1.5px solid var(--border);padding:9px 10px 10px;}
+.md-leave-btn{width:100%;height:32px;border-radius:var(--rs);border:1.5px solid #fecdd3;background:#fff0f3;color:#be123c;font-size:12px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .15s;}
+.md-leave-btn:hover{background:#ffe4e6;border-color:#fb7185;}
+.friend-request-btn{height:36px;min-height:36px;padding:7px 11px;font-size:13px;flex:none;width:100%;}
 
 /* Friend icon notification badge */
 .notif-badge{
@@ -655,7 +659,7 @@ textarea.fi{resize:none;height:76px;}
             </div>
           </div>
           <div id="afError" style="display:none;background:#fff0f3;border:1.5px solid #fecdd3;border-radius:var(--rs);padding:9px 12px;font-size:13px;color:#be123c;"></div>
-          <button class="bsub" onclick="submitAddFriend()">Send Friend Request</button>
+          <button class="bsub friend-request-btn" onclick="submitAddFriend()">Send Friend Request</button>
         </div>
         <!-- Requests panel -->
         <div class="fv-panel" id="fv-requests">
@@ -1192,6 +1196,26 @@ window.initMap=function(){
 };
 
 let markers=[];
+function upsertPin(pin, shouldToast){
+  if(!pin||!pin.id)return;
+  const idx=pins.findIndex(function(p){return String(p.id)===String(pin.id);});
+  if(idx>-1){pins[idx]=pin;}else{pins.push(pin);}
+  renderGroups();
+  renderPins();
+  updateMyPinCount();
+  renderDmList();
+  if(shouldToast){
+    const groupObj=groups.find(function(g){return String(g.id)===String(pin.group_id);});
+    showToast("New pin added"+(groupObj?" in "+groupObj.name:""));
+  }
+}
+function removeGroupFromLocal(groupId){
+  groups=groups.filter(function(g){return String(g.id)!==String(groupId);});
+  pins=pins.filter(function(p){return String(p.group_id)!==String(groupId);});
+  renderGroups();
+  fillPGrp();
+  renderPins();
+}
 function renderPins(){
   markers.forEach(m=>m.setMap(null));markers=[];
   const show=activeGroup?pins.filter(p=>p.group_id===activeGroup.id||p.group===activeGroup.name):pins;
@@ -1306,7 +1330,24 @@ function connectChatWS(gid){
 
   ws.onmessage=function(e){
     const data=JSON.parse(e.data);
-    // Only handle new_message events for this group
+
+    if(data.type==="new_pin"){
+      upsertPin(data.pin,false);
+      return;
+    }
+
+    if(data.type==="member_left_group"){
+      if(data.group){
+        const idx=groups.findIndex(function(g){return String(g.id)===String(data.group.id);});
+        if(idx>-1)groups[idx]=data.group;
+        if(activeGroup&&String(activeGroup.id)===String(data.group.id))activeGroup=data.group;
+        renderGroups();
+        if(activeGroup)renderMemberDrop(activeGroup,groups.findIndex(function(g){return String(g.id)===String(activeGroup.id);}));
+      }
+      if(data.username)showToast(data.username+" left the group");
+      return;
+    }
+
     if(data.type!=="new_message")return;
     const msg=data.message;
     // Skip if it is our own message (already rendered optimistically)
@@ -1427,6 +1468,9 @@ function renderMemberDrop(g,gi){
       '<span style="font-size:13px;font-weight:600;color:var(--text)">'+htmlEscape(m)+'</span>'+
     '</div>';
   }).join("");
+  const leaveHtml='<div class="md-leave-wrap">'+
+    '<button class="md-leave-btn" onclick="leaveActiveGroup()">Leave group</button>'+ 
+  '</div>';
   const inviteHtml='<div class="md-add-wrap">'+
     '<div class="md-add-title">➕ Add friends to group</div>'+
     (inviteFriends.length?'<div class="md-add-list">'+inviteFriends.map(function(f,i){
@@ -1440,7 +1484,40 @@ function renderMemberDrop(g,gi){
     }).join("")+'</div>':'<div class="md-empty">All of your friends are already in this group.</div>')+
   '</div>';
   document.getElementById("memberDrop").innerHTML=
-    '<div class="md-title">'+htmlEscape(g.name)+' · '+members.length+' members</div>'+memberHtml+inviteHtml;
+    '<div class="md-title">'+htmlEscape(g.name)+' · '+members.length+' members</div>'+memberHtml+inviteHtml+leaveHtml;
+}
+async function leaveActiveGroup(){
+  if(!activeGroup)return;
+  const groupName=activeGroup.name;
+  if(!confirm("Leave "+groupName+"?"))return;
+  try{
+    const leavingId=activeGroup.id;
+    const res=await fetch("/api/groups/"+encodeURIComponent(leavingId)+"/leave",{
+      method:"POST",
+      headers:apiHeaders()
+    });
+    const data=await res.json().catch(function(){return {};});
+    if(!res.ok){showToast(data.detail||"Could not leave group");return;}
+
+    groups=groups.filter(function(g){return String(g.id)!==String(leavingId);});
+    pins=pins.filter(function(p){return String(p.group_id)!==String(leavingId);});
+    if(chatSockets[leavingId]){try{chatSockets[leavingId].close();}catch(e){} delete chatSockets[leavingId];}
+    closeGroupChat();
+    memberDropOpen=false;
+    document.getElementById("memberDrop").classList.remove("open");
+
+    activeGroup=null;
+    if(groups.length){
+      setActiveGroup(groups[0]);
+    }else{
+      document.getElementById("pname").textContent="Select a group";
+      document.getElementById("pdot").style.background="#5aabf5";
+      renderGroups();
+      fillPGrp();
+      renderPins();
+    }
+    showToast("You left "+groupName);
+  }catch(e){showToast("Could not connect.");}
 }
 async function inviteFriendToActiveGroup(username){
   if(!activeGroup)return;
@@ -1531,11 +1608,7 @@ async function submitPin(){
   const res=await fetch("/api/pins",{method:"POST",headers:apiHeaders(),body:JSON.stringify(pin)});
   const saved=await res.json();
   if(!res.ok){alert(saved.detail||"Could not save pin.");return;}
-  pins.push(saved);
-  renderGroups();
-  renderPins();
-  updateMyPinCount();
-  renderDmList();
+  upsertPin(saved,false);
   pendingLL=null;
 }
 
@@ -1850,6 +1923,11 @@ function connectNotifWS(){
       const username=data.friend_username||"Someone";
       const openInDm=currentDmFriend&&String(currentDmFriend.id)===String(data.friend_id)&&document.getElementById("dmView").classList.contains("on");
       if(!openInDm)addMessageNotification(username+" sent you a message");
+    } else if(data.type==="new_pin_notification"){
+      upsertPin(data.pin,false);
+      const groupName=data.group_name||"a group";
+      const author=data.author||"Someone";
+      showToast(author+" added a pin in "+groupName);
     } else if(data.type==="added_to_group"){
       if(data.group){
         const idx=groups.findIndex(function(g){return String(g.id)===String(data.group.id);});
