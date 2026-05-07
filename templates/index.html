@@ -492,6 +492,55 @@ textarea.fi{resize:none;height:76px;}
 .profile-stat-label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
 .profile-stat-num{font-size:20px;font-weight:900;color:var(--blue-deep);}
 
+
+
+/* Final notification/button polish */
+.friend-request-btn{
+  flex:0 0 auto !important;
+  width:100% !important;
+  height:38px !important;
+  min-height:38px !important;
+  max-height:38px !important;
+  padding:0 14px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:13px !important;
+  line-height:1 !important;
+  border-radius:12px !important;
+}
+.chat-unread-badge{
+  min-width:20px;
+  height:20px;
+  padding:0 6px;
+  border-radius:10px;
+  background:#ec4899;
+  color:#fff;
+  font-size:10px;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:2px solid var(--white);
+  box-shadow:0 2px 8px rgba(236,72,153,.25);
+  flex-shrink:0;
+}
+.dm-unread-badge{
+  min-width:19px;
+  height:19px;
+  padding:0 6px;
+  border-radius:10px;
+  background:#ec4899;
+  color:#fff;
+  font-size:10px;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  box-shadow:0 2px 8px rgba(236,72,153,.25);
+}
+
 </style>
 </head>
 <body>
@@ -835,28 +884,76 @@ function myPinTotal(){
 // ── AUTH TOKEN ──
 let authToken = localStorage.getItem("pinned_token") || null;
 let currentUser = JSON.parse(localStorage.getItem("pinned_user") || "null");
-let messageNotifCount = Number(localStorage.getItem("pinned_message_notif_count") || "0");
 
+// Message notifications are tracked per chat.
+// This keeps the top Chat badge showing until the exact group/DM is opened.
+let unreadGroupMessages = JSON.parse(localStorage.getItem("pinned_unread_group_messages") || "{}");
+let unreadDmMessages = JSON.parse(localStorage.getItem("pinned_unread_dm_messages") || "{}");
+
+function saveMessageNotifications(){
+  localStorage.setItem("pinned_unread_group_messages", JSON.stringify(unreadGroupMessages));
+  localStorage.setItem("pinned_unread_dm_messages", JSON.stringify(unreadDmMessages));
+}
+function getUnreadGroupCount(groupId){
+  return Number(unreadGroupMessages[String(groupId)] || 0);
+}
+function getUnreadDmCount(friendId){
+  return Number(unreadDmMessages[String(friendId)] || 0);
+}
+function getTotalUnreadMessages(){
+  const gTotal = Object.values(unreadGroupMessages).reduce((a,b)=>a+Number(b||0),0);
+  const dTotal = Object.values(unreadDmMessages).reduce((a,b)=>a+Number(b||0),0);
+  return gTotal + dTotal;
+}
 function updateMessageNotifBadge(){
   const badge=document.getElementById("chatMsgBadge");
   if(!badge)return;
-  if(messageNotifCount>0){
-    badge.textContent=messageNotifCount>9?"9+":messageNotifCount;
+  const total=getTotalUnreadMessages();
+  if(total>0){
+    badge.textContent=total>9?"9+":total;
     badge.classList.add("on");
   }else{
     badge.classList.remove("on");
   }
 }
-function addMessageNotification(text){
-  messageNotifCount+=1;
-  localStorage.setItem("pinned_message_notif_count",String(messageNotifCount));
+function refreshMessageBadges(){
   updateMessageNotifBadge();
+  if(typeof renderGroups==="function")renderGroups();
+  if(typeof renderDmList==="function")renderDmList();
+}
+function addMessageNotification(text, kind, id){
+  if(kind==="group" && id){
+    const key=String(id);
+    unreadGroupMessages[key]=getUnreadGroupCount(key)+1;
+  }else if(kind==="dm" && id){
+    const key=String(id);
+    unreadDmMessages[key]=getUnreadDmCount(key)+1;
+  }
+  saveMessageNotifications();
+  refreshMessageBadges();
   if(typeof showToast==="function")showToast(text);
 }
+function clearGroupMessageNotifications(groupId){
+  const key=String(groupId);
+  if(unreadGroupMessages[key]){
+    delete unreadGroupMessages[key];
+    saveMessageNotifications();
+    refreshMessageBadges();
+  }
+}
+function clearDmMessageNotifications(friendId){
+  const key=String(friendId);
+  if(unreadDmMessages[key]){
+    delete unreadDmMessages[key];
+    saveMessageNotifications();
+    refreshMessageBadges();
+  }
+}
 function clearMessageNotifications(){
-  messageNotifCount=0;
-  localStorage.setItem("pinned_message_notif_count","0");
-  updateMessageNotifBadge();
+  unreadGroupMessages={};
+  unreadDmMessages={};
+  saveMessageNotifications();
+  refreshMessageBadges();
 }
 
 
@@ -986,6 +1083,8 @@ function switchTab(name){
 function renderGroups(){
   document.getElementById("glist").innerHTML=groups.map((g,i)=>{
     const count=groupPinCount(g);
+    const unread=getUnreadGroupCount(g.id);
+    const unreadBadge=unread>0?`<div class="chat-unread-badge">${unread>9?"9+":unread}</div>`:"";
     const members=(g.members||[]).length;
     return `
     <div class="gcard ${activeGroup&&activeGroup.id===g.id?"on":""}" onclick="setActiveGroupById('${jsEscape(g.id)}')">
@@ -994,6 +1093,7 @@ function renderGroups(){
         <div class="gname">${htmlEscape(g.name)}</div>
         <div class="gsub">${members} member${members!==1?"s":""} · ${count} pins</div>
       </div>
+      ${unreadBadge}
       <div class="gcnt" style="background:${GCOLS[i%GCOLS.length]}">${count}</div>
     </div>`;
   }).join("")||`<div style="text-align:center;padding:24px 10px;color:var(--muted);font-size:13px">No groups yet — create one below!</div>`;
@@ -1001,6 +1101,7 @@ function renderGroups(){
 
 function setAG(g){
   activeGroup=g;
+  clearGroupMessageNotifications(g.id);
   renderGroups();
   const i=groups.findIndex(x=>x.id===g.id);
   const col=GCOLS[i%GCOLS.length];
@@ -1062,6 +1163,8 @@ function renderDmList(){
       const ini=name.split(" ").map(function(x){return x[0];}).join("").slice(0,2).toUpperCase();
       const msgs=dmCache[fid]||[];
       const preview=msgs.length?msgs[msgs.length-1].text:"Tap to say hi!";
+      const unread=getUnreadDmCount(fid);
+      const unreadBadge=unread>0?"<div class=\"dm-unread-badge\">"+(unread>9?"9+":unread)+"</div>":"";
       const pinCount=friend.pin_count ?? getPinCount(name);
       const fireEmoji=pinCount>=10?"\uD83D\uDD25":pinCount>=5?"\uD83D\uDCCD":pinCount>=1?"\uD83D\uDCCC":"\u00B7";
       const pinBadge="<div class=\"dm-pins\"><span class=\"dm-pin-icon\""+( pinCount===0?" style=\"opacity:.3\"":"")+">"+fireEmoji+"</span><span class=\"dm-pin-count\""+( pinCount===0?" style=\"color:var(--muted)\"":"")+">"+pinCount+"</span><span class=\"dm-pin-label\">pins</span></div>";
@@ -1080,6 +1183,7 @@ async function openDmById(friendId, idx){
   const friend=(realFriends||[]).find(f=>String(f.id)===String(friendId));
   if(!friend)return;
   currentDmFriend=friend;
+  clearDmMessageNotifications(friend.id);
   const name=friend.username;
   const ac=AVCOLS[idx%AVCOLS.length];
   const ini=name.split(" ").map(function(x){return x[0];}).join("").slice(0,2).toUpperCase();
@@ -1918,11 +2022,11 @@ function connectNotifWS(){
       const author=data.message&&data.message.author?data.message.author:"Someone";
       const groupName=data.group_name||"a group";
       const openInGroup=currentChatGid&&String(currentChatGid)===String(data.group_id)&&document.getElementById("gchatView").classList.contains("on");
-      if(!openInGroup)addMessageNotification(author+" messaged in "+groupName);
+      if(!openInGroup)addMessageNotification(author+" messaged in "+groupName,"group",data.group_id);
     } else if(data.type==="dm_message_notification"){
       const username=data.friend_username||"Someone";
       const openInDm=currentDmFriend&&String(currentDmFriend.id)===String(data.friend_id)&&document.getElementById("dmView").classList.contains("on");
-      if(!openInDm)addMessageNotification(username+" sent you a message");
+      if(!openInDm)addMessageNotification(username+" sent you a message","dm",data.friend_id);
     } else if(data.type==="new_pin_notification"){
       upsertPin(data.pin,false);
       const groupName=data.group_name||"a group";
@@ -1986,7 +2090,8 @@ function toggleDarkMode(){
 
 // ── CHAT BUTTON ──
 function openChat(){
-  clearMessageNotifications();
+  // Do not clear message notifications here.
+  // A notification clears only when the exact DM or group chat is opened.
   showSidebar();
   switchTab("dms");
 }
