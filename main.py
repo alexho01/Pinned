@@ -243,6 +243,32 @@ async def invite_to_group(group_id: str, body: InviteBody,
 
     return {"ok": True, "username": invitee.username, "group": data}
 
+@app.post("/api/groups/{group_id}/leave")
+async def leave_group(group_id: str,
+                      current_user: User = Depends(get_current_user),
+                      db: Session = Depends(get_db)):
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(404, "Group not found")
+    if current_user not in group.members:
+        raise HTTPException(403, "You are not in this group")
+
+    group_name = group.name
+    group.members.remove(current_user)
+    db.commit()
+    db.refresh(group)
+    data = _group_dict(group)
+
+    # Tell users currently inside the group chat that someone left.
+    await manager.broadcast(group_id, {
+        "type": "member_left_group",
+        "group_id": group_id,
+        "group": data,
+        "username": current_user.username
+    })
+
+    return {"ok": True, "group_id": group_id, "group_name": group_name, "group": data}
+
 # ── Pins ──
 @app.get("/api/pins")
 def get_pins(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -265,8 +291,22 @@ async def create_pin(body: PinBody, current_user: User = Depends(get_current_use
     db.commit()
     db.refresh(pin)
     data = _pin_dict(pin)
-    # Broadcast new pin to all group members via WebSocket
+
+    # Broadcast new pin to members who currently have the group socket open.
     await manager.broadcast(body.group_id, {"type": "new_pin", "pin": data})
+
+    # Also notify every other member through their always-on notification socket
+    # so their map can update without refreshing.
+    for member in group.members:
+        if member.id != current_user.id:
+            await manager.broadcast(f"notif_{member.id}", {
+                "type": "new_pin_notification",
+                "group_id": body.group_id,
+                "group_name": group.name,
+                "pin": data,
+                "author": current_user.username
+            })
+
     return data
 
 # ── Chat ──
