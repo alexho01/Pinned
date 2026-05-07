@@ -83,6 +83,32 @@ Click the Settings button in the nav to toggle Dark Mode, which switches the ent
 
 ---
 
+## Architecture
+
+<img width="1201" height="915" alt="Arc" src="https://github.com/user-attachments/assets/bda2822d-b360-40d4-b950-fe584a272d8f" />
+
+The app is split into a frontend served by the backend and a set of API endpoints that handle all data operations.
+
+**Request flow**
+
+When a user opens the app, their browser requests the page from the FastAPI backend which serves index.html via Jinja2 templating. The Google Maps JavaScript API is loaded directly by the browser using the API key injected into the HTML by the server. All subsequent interactions such as dropping pins, sending messages, and creating groups go through REST API calls to the backend with a JWT token in the Authorization header.
+
+**Components**
+
+The backend consists of four Python files. main.py contains all the API routes and the WebSocket connection manager. models.py defines the SQLAlchemy database models for users, groups, pins, reviews, and messages. database.py manages the connection to PostgreSQL using the DATABASE_URL environment variable. auth.py handles password hashing with bcrypt and JWT token creation and validation.
+
+The frontend is a single HTML file served from the templates folder. It contains all the JavaScript, CSS, and HTML for the map, sidebar, chat, modals, and auth screens. It communicates with the backend via fetch calls and maintains the auth token in localStorage.
+
+**Database**
+
+PostgreSQL is hosted on Railway. The tables are created automatically on first startup via SQLAlchemy's create_all. The schema has seven tables: users, groups, group_members, pins, reviews, messages, and friendships.
+
+**Authentication**
+
+On registration, passwords are hashed with bcrypt before being stored. On login, the backend returns a
+
+---
+
 ## Running Locally
 
 The app requires the Python backend to be running. Do not open the HTML file directly or use VS Code Live Server as those will not work.
