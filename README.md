@@ -85,7 +85,7 @@ Click the Settings button in the nav to toggle Dark Mode, which switches the ent
 
 ## Architecture
 
-<img width="1201" height="915" alt="Arc" src="https://github.com/user-attachments/assets/bda2822d-b360-40d4-b950-fe584a272d8f" />
+<img width="1101" height="815" alt="Arc" src="https://github.com/user-attachments/assets/bda2822d-b360-40d4-b950-fe584a272d8f" />
 
 The app is split into a frontend served by the backend and a set of API endpoints that handle all data operations.
 
