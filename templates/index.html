@@ -204,32 +204,53 @@ html,body{height:100%;background:var(--bg);font-family:'Nunito',sans-serif;color
 .md-row:last-child{padding-bottom:10px;}
 
 
-/* Friend request notification badge */
+/* Friend icon notification badge */
 .notif-badge{
   position:absolute;top:-4px;right:-4px;
   width:16px;height:16px;border-radius:50%;
   background:#ec4899;color:#fff;
   font-size:10px;font-weight:700;
   display:none;align-items:center;justify-content:center;
-  border:2px solid var(--white);
+  border:2px solid var(--white);pointer-events:none;
 }
 .notif-badge.on{display:flex;}
 
-/* Friend request panel inside DM tab */
-.freq-panel{
-  background:var(--blue-faint);border-bottom:1.5px solid var(--border);
-  padding:0;max-height:0;overflow:hidden;
-  transition:max-height .3s ease,padding .3s ease;
+/* Friends slide-in view */
+.friends-view{
+  position:absolute;inset:0;background:var(--white);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+  z-index:6;
 }
-.freq-panel.on{max-height:400px;padding:10px;}
+.friends-view.on{transform:translateX(0);}
+.friends-view-hd{
+  padding:10px 12px;border-bottom:1.5px solid var(--border);
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.friends-view-tabs{display:flex;gap:4px;padding:8px 10px 0;border-bottom:1.5px solid var(--border);flex-shrink:0;}
+.fv-tab{
+  flex:1;padding:8px 6px;text-align:center;font-size:12px;font-weight:700;
+  color:var(--muted);cursor:pointer;border-radius:var(--rs) var(--rs) 0 0;
+  border-bottom:2.5px solid transparent;transition:all .18s;
+  position:relative;
+}
+.fv-tab.on{color:var(--blue-mid);border-bottom-color:var(--blue-mid);background:var(--blue-faint);}
+.fv-tab:hover:not(.on){color:var(--text2);}
+.fv-tab-badge{
+  position:absolute;top:4px;right:8px;
+  width:14px;height:14px;border-radius:50%;
+  background:#ec4899;color:#fff;font-size:9px;font-weight:700;
+  display:none;align-items:center;justify-content:center;
+}
+.fv-tab-badge.on{display:flex;}
+.fv-panel{flex:1;overflow-y:auto;padding:12px;display:none;flex-direction:column;gap:8px;}
+.fv-panel.on{display:flex;}
 .freq-item{
   display:flex;align-items:center;gap:10px;
-  padding:8px 10px;background:var(--white);
+  padding:10px 12px;background:var(--bg);
   border:1.5px solid var(--border);border-radius:var(--r);
-  margin-bottom:6px;
 }
-.freq-item:last-child{margin-bottom:0;}
-.freq-name{font-size:13px;font-weight:700;flex:1;}
+.freq-name{font-size:13px;font-weight:700;flex:1;color:var(--text);}
 .freq-actions{display:flex;gap:6px;}
 .freq-accept{padding:5px 12px;background:var(--blue-mid);color:#fff;border:none;border-radius:var(--rs);font-size:12px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;}
 .freq-accept:hover{background:var(--blue-deep);}
@@ -550,23 +571,56 @@ textarea.fi{resize:none;height:76px;}
 
     <!-- DMs PANEL -->
     <div class="spanel" id="tp-dms" style="position:relative;">
-      <!-- Friend requests panel -->
-      <div class="freq-panel" id="freqPanel"></div>
       <div style="display:flex;align-items:center;padding:10px 14px 0;flex-shrink:0;">
         <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Direct Messages</span>
-        <div style="position:relative;" onclick="toggleFreqPanel()">
-        <div class="add-friend-btn" title="Add friend">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <line x1="19" y1="8" x2="19" y2="14"/>
-            <line x1="22" y1="11" x2="16" y2="11"/>
-          </svg>
-        </div>
-        <div class="notif-badge" id="freqBadge"></div>
+        <div style="position:relative;margin-left:auto;" onclick="openFriendsView()">
+          <div class="add-friend-btn" title="Add friend" style="cursor:pointer;">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+          </div>
+          <div class="notif-badge" id="freqBadge"></div>
         </div>
       </div>
       <div class="dm-list" id="dmList"></div>
+
+      <!-- Friends slide-in view -->
+      <div class="friends-view" id="friendsView">
+        <div class="friends-view-hd">
+          <div class="back-btn" onclick="closeFriendsView()">&#8592;</div>
+          <span style="font-size:14px;font-weight:700;">Friends</span>
+        </div>
+        <div class="friends-view-tabs">
+          <div class="fv-tab on" data-fv="add" onclick="switchFVTab('add')">Add Friend</div>
+          <div class="fv-tab" data-fv="requests" onclick="switchFVTab('requests')">
+            Requests
+            <span class="fv-tab-badge" id="fvTabBadge"></span>
+          </div>
+        </div>
+        <!-- Add friend panel -->
+        <div class="fv-panel on" id="fv-add">
+          <div class="field" style="margin-bottom:0">
+            <label class="auth-label">Username</label>
+            <input class="fi" id="afName" placeholder="Enter username to add" autocomplete="off" onkeydown="if(event.key==='Enter')submitAddFriend()"/>
+          </div>
+          <div id="afPreview" style="display:none;padding:10px 12px;background:var(--blue-faint);border:1.5px solid var(--blue-pale);border-radius:var(--rs);align-items:center;gap:10px;">
+            <div id="afAvPreview" style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;"></div>
+            <div>
+              <div id="afNamePreview" style="font-size:13px;font-weight:700;color:var(--text)"></div>
+              <div style="font-size:11px;color:var(--muted)">Will appear in Messages</div>
+            </div>
+          </div>
+          <div id="afError" style="display:none;background:#fff0f3;border:1.5px solid #fecdd3;border-radius:var(--rs);padding:9px 12px;font-size:13px;color:#be123c;"></div>
+          <button class="bsub" onclick="submitAddFriend()">Send Friend Request</button>
+        </div>
+        <!-- Requests panel -->
+        <div class="fv-panel" id="fv-requests">
+          <div id="freqPanel"></div>
+        </div>
+      </div>
       <!-- DM conversation slides in -->
       <div class="dm-view" id="dmView">
         <div class="dm-hd">
@@ -1327,12 +1381,11 @@ function myLoc(){
 
 // ── ADD FRIEND ──
 function openAddFriendModal(){
-  document.getElementById("afName").value="";
-  document.getElementById("afHandle").value="";
-  document.getElementById("afPreview").style.display="none";
-  document.getElementById("addFriendMo").classList.add("on");
+  openFriendsView();
+  switchFVTab("add");
   // live preview as they type
-  document.getElementById("afName").oninput=function(){
+  var afName=document.getElementById("afName");
+  if(afName) afName.oninput=function(){
     const n=this.value.trim();
     if(!n){document.getElementById("afPreview").style.display="none";return;}
     const ini=n.split(" ").map(function(x){return x[0].toUpperCase();}).join("").slice(0,2);
@@ -1371,10 +1424,9 @@ async function submitAddFriend(){
       if(errEl){errEl.textContent=data.detail||"User not found.";errEl.style.display="block";}
       return;
     }
-    closeMo("addFriendMo");
-    document.getElementById("afName").value="";
-    document.getElementById("afHandle").value="";
-    // Show a quick confirmation
+    var afEl=document.getElementById("afName");
+    if(afEl)afEl.value="";
+    document.getElementById("afPreview").style.display="none";
     showToast("Friend request sent to "+name);
   }catch(e){
     if(errEl){errEl.textContent="Could not connect.";errEl.style.display="block";}
@@ -1399,20 +1451,32 @@ async function loadFriendRequests(){
 }
 
 function updateReqBadge(){
+  const n=pendingRequests.length;
+  // Icon badge
   const badge=document.getElementById("freqBadge");
-  if(!badge)return;
-  if(pendingRequests.length>0){
-    badge.textContent=pendingRequests.length>9?"9+":pendingRequests.length;
-    badge.classList.add("on");
-  } else {
-    badge.classList.remove("on");
-  }
+  if(badge){n>0?(badge.textContent=n>9?"9+":n,badge.classList.add("on")):badge.classList.remove("on");}
+  // Tab badge
+  const tabBadge=document.getElementById("fvTabBadge");
+  if(tabBadge){n>0?(tabBadge.textContent=n>9?"9+":n,tabBadge.classList.add("on")):tabBadge.classList.remove("on");}
 }
 
-function toggleFreqPanel(){
-  const panel=document.getElementById("freqPanel");
-  if(!panel)return;
-  panel.classList.toggle("on");
+function openFriendsView(){
+  document.getElementById("friendsView").classList.add("on");
+  switchFVTab("add");
+}
+
+function closeFriendsView(){
+  document.getElementById("friendsView").classList.remove("on");
+}
+
+function switchFVTab(name){
+  document.querySelectorAll(".fv-tab").forEach(function(t){t.classList.toggle("on",t.dataset.fv===name);});
+  document.querySelectorAll(".fv-panel").forEach(function(p){p.classList.toggle("on",p.id==="fv-"+name);});
+  // Clear badge when user opens requests tab
+  if(name==="requests"){
+    const tabBadge=document.getElementById("fvTabBadge");
+    if(tabBadge)tabBadge.classList.remove("on");
+  }
 }
 
 function renderFreqPanel(){
