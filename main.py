@@ -125,6 +125,18 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
 def me(current_user: User = Depends(get_current_user)):
     return {"id": current_user.id, "username": current_user.username, "email": current_user.email}
 
+@app.get("/api/profile")
+def profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    pin_count = db.query(Pin).filter(Pin.author_id == current_user.id).count()
+    group_count = len(current_user.groups)
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "pin_count": pin_count,
+        "group_count": group_count,
+    }
+
 # ── Groups ──
 @app.get("/api/groups")
 def get_groups(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -236,84 +248,18 @@ async def post_dm(friend_id: str, body: MessageBody,
     return data
 
 # ── Friends ──
-# In-memory friend requests and blocks (move to DB later)
-friend_requests = {}  # request_id -> {id, from_id, from_username, to_id}
-blocked_users = {}    # user_id -> set of blocked user_ids
-confirmed_friends = {}  # user_id -> set of friend user_ids
-
 @app.get("/api/friends")
 def get_friends(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Friends are users who share at least one group
+    seen = set()
     friends = []
-    my_friends = confirmed_friends.get(current_user.id, set())
-    for friend_id in my_friends:
-        friend = db.query(User).filter(User.id == friend_id).first()
-        if friend:
-            pin_count = db.query(Review).filter(Review.author_id == friend.id).count()
-            friends.append({"id": friend.id, "username": friend.username, "pin_count": pin_count})
+    for group in current_user.groups:
+        for member in group.members:
+            if member.id != current_user.id and member.id not in seen:
+                seen.add(member.id)
+                pin_count = db.query(Review).filter(Review.author_id == member.id).count()
+                friends.append({"id": member.id, "username": member.username, "pin_count": pin_count})
     return friends
-
-@app.get("/api/friends/requests")
-def get_friend_requests(current_user: User = Depends(get_current_user)):
-    incoming = [r for r in friend_requests.values() if r["to_id"] == current_user.id]
-    return incoming
-
-@app.post("/api/friends/request")
-async def send_friend_request(body: InviteBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    target = db.query(User).filter(User.username == body.username).first()
-    if not target:
-        raise HTTPException(404, f"User '{body.username}' not found")
-    if target.id == current_user.id:
-        raise HTTPException(400, "You cannot add yourself")
-    blocked = blocked_users.get(target.id, set())
-    if current_user.id in blocked:
-        raise HTTPException(403, "Cannot send request to this user")
-    req_id = str(uuid.uuid4())
-    req = {"id": req_id, "from_id": current_user.id, "from_username": current_user.username, "to_id": target.id}
-    friend_requests[req_id] = req
-    # Notify target via WebSocket
-    await manager.broadcast(f"notif_{target.id}", {"type": "friend_request", "request": req})
-    return {"ok": True}
-
-@app.post("/api/friends/request/{req_id}/accept")
-async def accept_request(req_id: str, current_user: User = Depends(get_current_user)):
-    req = friend_requests.get(req_id)
-    if not req or req["to_id"] != current_user.id:
-        raise HTTPException(404, "Request not found")
-    # Add to confirmed friends (both ways)
-    confirmed_friends.setdefault(current_user.id, set()).add(req["from_id"])
-    confirmed_friends.setdefault(req["from_id"], set()).add(current_user.id)
-    del friend_requests[req_id]
-    # Notify the sender
-    await manager.broadcast(f"notif_{req['from_id']}", {"type": "friend_accepted", "username": current_user.username})
-    return {"ok": True}
-
-@app.post("/api/friends/request/{req_id}/decline")
-def decline_request(req_id: str, current_user: User = Depends(get_current_user)):
-    req = friend_requests.get(req_id)
-    if not req or req["to_id"] != current_user.id:
-        raise HTTPException(404, "Request not found")
-    del friend_requests[req_id]
-    return {"ok": True}
-
-@app.delete("/api/friends/{username}")
-def unfriend(username: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    target = db.query(User).filter(User.username == username).first()
-    if not target:
-        raise HTTPException(404, "User not found")
-    confirmed_friends.get(current_user.id, set()).discard(target.id)
-    confirmed_friends.get(target.id, set()).discard(current_user.id)
-    return {"ok": True}
-
-@app.post("/api/friends/block")
-def block_user(body: InviteBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    target = db.query(User).filter(User.username == body.username).first()
-    if not target:
-        raise HTTPException(404, "User not found")
-    blocked_users.setdefault(current_user.id, set()).add(target.id)
-    # Also remove from friends if they were friends
-    confirmed_friends.get(current_user.id, set()).discard(target.id)
-    confirmed_friends.get(target.id, set()).discard(current_user.id)
-    return {"ok": True}
 
 @app.get("/api/users/search")
 def search_users(q: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
