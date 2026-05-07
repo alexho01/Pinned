@@ -59,7 +59,7 @@ Click the Settings button in the nav to toggle Dark Mode, which switches the ent
 ## What Is Still Being Built
 
 - [ ] Live map sync so pins appear instantly for all group members without refreshing
-- [ ] Real-time chat using WebSockets instead of polling
+- [x] Real-time chat using WebSockets instead of polling
 - [ ] Invite friends via a shareable link rather than typing their username
 - [ ] Photo uploads attached to pin reviews
 - [ ] Push notifications when a friend drops a pin nearby
