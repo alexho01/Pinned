@@ -972,9 +972,10 @@ function closeReview(){document.getElementById("rp").classList.remove("on");}
 
 // ── CHAT (HTTP polling, per-group cache) ──
 let currentChatGid=null;
-let pollTimer=null;
 // Cache messages per group so switching back restores history
-const msgCache={};   // { gid: [ ...msg objects ] }
+const msgCache={};
+// WebSocket connections per group
+const chatSockets={};
 
 // stable colour per author
 const authorColorCache={};
@@ -987,9 +988,10 @@ function authorColor(name){
 }
 
 function buildMsgEl(msg){
-  const mine=msg.author==="You";
+  // Use currentUser username to detect own messages
+  const mine=currentUser&&(msg.author===currentUser.username||msg.author==="You");
   const ac=authorColor(msg.author);
-  const ini=msg.initials||msg.author.slice(0,2).toUpperCase();
+  const ini=msg.initials||(msg.author.slice(0,2).toUpperCase());
   const div=document.createElement("div");
   div.className="msg "+(mine?"me":"");
   div.innerHTML=
@@ -1009,50 +1011,77 @@ function renderChatUI(gid){
   c.innerHTML="";
   const cached=msgCache[gid]||[];
   if(!cached.length){
-    c.innerHTML='<div data-ph="1" style="text-align:center;padding:30px 10px;color:var(--muted);font-size:13px">No messages yet — say hi! 👋</div>';
+    c.innerHTML='<div data-ph="1" style="text-align:center;padding:30px 10px;color:var(--muted);font-size:13px">No messages yet — say hi!</div>';
   } else {
     cached.forEach(function(m){c.appendChild(buildMsgEl(m));});
   }
   c.scrollTop=c.scrollHeight;
 }
 
+function connectChatWS(gid){
+  // Close existing socket for this group if any
+  if(chatSockets[gid]){
+    try{chatSockets[gid].close();}catch(e){}
+    delete chatSockets[gid];
+  }
+  const protocol=location.protocol==="https:"?"wss":"ws";
+  const ws=new WebSocket(protocol+"://"+location.host+"/ws/"+gid+"?token="+encodeURIComponent(authToken));
+  chatSockets[gid]=ws;
+
+  ws.onmessage=function(e){
+    const data=JSON.parse(e.data);
+    // Only handle new_message events for this group
+    if(data.type!=="new_message")return;
+    const msg=data.message;
+    // Skip if it is our own message (already rendered optimistically)
+    if(currentUser&&msg.author===currentUser.username)return;
+    if(!msgCache[gid])msgCache[gid]=[];
+    msgCache[gid].push(msg);
+    // Only update UI if this is the currently open chat
+    if(currentChatGid===gid){
+      const c=document.getElementById("msgs");
+      const ph=c.querySelector("[data-ph]");
+      if(ph)ph.remove();
+      c.appendChild(buildMsgEl(msg));
+      c.scrollTop=c.scrollHeight;
+    }
+  };
+
+  ws.onclose=function(){
+    delete chatSockets[gid];
+    // Reconnect after 3s if this is still the active group
+    if(currentChatGid===gid){
+      setTimeout(function(){
+        if(currentChatGid===gid&&authToken) connectChatWS(gid);
+      },3000);
+    }
+  };
+
+  ws.onerror=function(){
+    try{ws.close();}catch(e){}
+  };
+}
+
 async function loadChat(gid){
-  if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
   currentChatGid=gid;
   document.getElementById("ci").value="";
 
-  // Render cached messages instantly (no flicker, no wipe)
+  // Render cached messages instantly
   if(!msgCache[gid]) msgCache[gid]=[];
   renderChatUI(gid);
 
-  // Fetch full history from server and merge (avoids wipe on switch-back)
+  // Fetch full history from server
   const fresh=await fetch("/api/chat/"+gid,{headers:apiHeaders()}).then(r=>r.json()).catch(function(){return null;});
   if(!fresh||currentChatGid!==gid)return;
-  // Replace cache with server truth, then re-render only if something changed
   if(JSON.stringify(fresh)!==JSON.stringify(msgCache[gid])){
     msgCache[gid]=fresh;
     renderChatUI(gid);
   }
 
-  // Poll every 2s — only append genuinely new server messages
-  pollTimer=setInterval(async function(){
-    if(currentChatGid!==gid){clearInterval(pollTimer);return;}
-    const latest=await fetch("/api/chat/"+gid,{headers:apiHeaders()}).then(r=>r.json()).catch(function(){return null;});
-    if(!latest||currentChatGid!==gid)return;
-    const cached=msgCache[gid]||[];
-    if(latest.length>cached.length){
-      const newOnes=latest.slice(cached.length);
-      newOnes.forEach(function(m){
-        if(m.author==="You")return; // already in cache from sendMsg
-        msgCache[gid].push(m);
-        const c=document.getElementById("msgs");
-        const ph=c.querySelector("[data-ph]");
-        if(ph)ph.remove();
-        c.appendChild(buildMsgEl(m));
-        c.scrollTop=c.scrollHeight;
-      });
-    }
-  },2000);
+  // Connect WebSocket for live updates (only if not already connected)
+  if(!chatSockets[gid]||chatSockets[gid].readyState>1){
+    connectChatWS(gid);
+  }
 }
 
 async function sendMsg(){
@@ -1061,22 +1090,22 @@ async function sendMsg(){
   if(!t||!currentChatGid)return;
   const gid=currentChatGid;
   const now=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-  const msg={author:"You",initials:"ME",text:t,time:now};
-  // Add to cache immediately so switching away and back still shows it
+  const authorName=currentUser?currentUser.username:"You";
+  const msg={author:authorName,initials:authorName.slice(0,2).toUpperCase(),text:t,time:now};
+  // Optimistic render
   if(!msgCache[gid])msgCache[gid]=[];
   msgCache[gid].push(msg);
-  // Render into UI
   const c=document.getElementById("msgs");
   const ph=c.querySelector("[data-ph]");
   if(ph)ph.remove();
   c.appendChild(buildMsgEl(msg));
   c.scrollTop=c.scrollHeight;
   inp.value="";
-  // POST to server
+  // POST to server -- WebSocket will broadcast to other members
   await fetch("/api/chat/"+gid,{
     method:"POST",
     headers:apiHeaders(),
-    body:JSON.stringify(msg)
+    body:JSON.stringify({text:t})
   }).catch(function(){});
 }
 
