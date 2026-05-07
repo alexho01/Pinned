@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import Column, String, DateTime, ForeignKey, UniqueConstraint, or_, func
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from dotenv import load_dotenv
 from database import get_db, engine
 from models import Base, User, Group, Pin, Review, Message, group_members
@@ -101,6 +101,8 @@ class GroupBody(BaseModel):
     name: str
     emoji: Optional[str] = "👥"
     color: Optional[str] = "#5aabf5"
+    # Usernames of confirmed friends to add when creating the group
+    member_usernames: Optional[List[str]] = []
 
 class PinBody(BaseModel):
     lat: float
@@ -157,42 +159,89 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
 def me(current_user: User = Depends(get_current_user)):
     return {"id": current_user.id, "username": current_user.username, "email": current_user.email}
 
+# ── Group helpers ──
+def _group_dict(group: Group) -> dict:
+    return {
+        "id": group.id,
+        "name": group.name,
+        "emoji": group.emoji,
+        "color": group.color,
+        "members": [{"id": m.id, "username": m.username} for m in group.members]
+    }
+
 # ── Groups ──
 @app.get("/api/groups")
 def get_groups(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return [
-        {"id": g.id, "name": g.name, "emoji": g.emoji, "color": g.color,
-         "members": [{"id": m.id, "username": m.username} for m in g.members]}
-        for g in current_user.groups
-    ]
+    return [_group_dict(g) for g in current_user.groups]
 
 @app.post("/api/groups")
-def create_group(body: GroupBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def create_group(body: GroupBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     group = Group(name=body.name, emoji=body.emoji, color=body.color, owner_id=current_user.id)
     group.members.append(current_user)
+
+    added_members = []
+    for username in body.member_usernames or []:
+        invitee = _get_user_by_username(db, username)
+        if not invitee:
+            raise HTTPException(404, f"User '{username}' not found")
+        if invitee.id == current_user.id:
+            raise HTTPException(400, "You cannot add yourself to the group")
+        if _is_blocked(db, current_user.id, invitee.id):
+            raise HTTPException(403, f"You cannot add '{invitee.username}'")
+        if not _is_friend(db, current_user.id, invitee.id):
+            raise HTTPException(403, "You can only add friends to a group")
+        if invitee not in group.members:
+            group.members.append(invitee)
+            added_members.append(invitee)
+
     db.add(group)
     db.commit()
     db.refresh(group)
-    return {"id": group.id, "name": group.name, "emoji": group.emoji, "color": group.color,
-            "members": [{"id": m.id, "username": m.username} for m in group.members]}
+    data = _group_dict(group)
+
+    for member in added_members:
+        await manager.broadcast(f"notif_{member.id}", {
+            "type": "added_to_group",
+            "group": data,
+            "added_by": current_user.username
+        })
+
+    return data
 
 @app.post("/api/groups/{group_id}/invite")
-def invite_to_group(group_id: str, body: InviteBody,
-                    current_user: User = Depends(get_current_user),
-                    db: Session = Depends(get_db)):
+async def invite_to_group(group_id: str, body: InviteBody,
+                          current_user: User = Depends(get_current_user),
+                          db: Session = Depends(get_db)):
     group = db.query(Group).filter(Group.id == group_id).first()
     if not group:
         raise HTTPException(404, "Group not found")
     if current_user not in group.members:
         raise HTTPException(403, "You are not in this group")
-    invitee = db.query(User).filter(User.username == body.username).first()
+
+    invitee = _get_user_by_username(db, body.username)
     if not invitee:
         raise HTTPException(404, f"User '{body.username}' not found")
+    if invitee.id == current_user.id:
+        raise HTTPException(400, "You are already in this group")
     if invitee in group.members:
         raise HTTPException(400, "User is already in this group")
+    if _is_blocked(db, current_user.id, invitee.id):
+        raise HTTPException(403, "You cannot add this user")
+    if not _is_friend(db, current_user.id, invitee.id):
+        raise HTTPException(403, "You can only add friends to a group")
+
     group.members.append(invitee)
     db.commit()
-    return {"ok": True, "username": invitee.username}
+    db.refresh(group)
+    data = _group_dict(group)
+
+    await manager.broadcast(f"notif_{invitee.id}", {
+        "type": "added_to_group",
+        "group": data,
+        "added_by": current_user.username
+    })
+
+    return {"ok": True, "username": invitee.username, "group": data}
 
 # ── Pins ──
 @app.get("/api/pins")
@@ -236,12 +285,27 @@ async def post_message(group_id: str, body: MessageBody,
     group = db.query(Group).filter(Group.id == group_id).first()
     if not group or current_user not in group.members:
         raise HTTPException(403, "Not a member of this group")
+
     msg = Message(group_id=group_id, author_id=current_user.id, text=body.text)
     db.add(msg)
     db.commit()
     db.refresh(msg)
+
     data = _msg_dict(msg)
+
+    # Live update for users currently inside the group chat.
     await manager.broadcast(group_id, {"type": "new_message", "message": data})
+
+    # Notification badge/toast for every other group member.
+    for member in group.members:
+        if member.id != current_user.id:
+            await manager.broadcast(f"notif_{member.id}", {
+                "type": "group_message_notification",
+                "group_id": group_id,
+                "group_name": group.name,
+                "message": data
+            })
+
     return data
 
 # ── DMs ──
@@ -260,16 +324,32 @@ def get_dm(friend_id: str, current_user: User = Depends(get_current_user), db: S
 async def post_dm(friend_id: str, body: MessageBody,
                   current_user: User = Depends(get_current_user),
                   db: Session = Depends(get_db)):
+    friend = db.query(User).filter(User.id == friend_id).first()
+    if not friend:
+        raise HTTPException(404, "User not found")
     if not _is_friend(db, current_user.id, friend_id) or _is_blocked(db, current_user.id, friend_id):
         raise HTTPException(403, "You can only message friends")
+
     msg = Message(dm_to_id=friend_id, author_id=current_user.id, text=body.text)
     db.add(msg)
     db.commit()
     db.refresh(msg)
+
     data = _msg_dict(msg)
     a, b = _friend_pair(current_user.id, friend_id)
     dm_channel = f"dm_{a}_{b}"
+
+    # Live update for users currently inside this DM.
     await manager.broadcast(dm_channel, {"type": "new_dm", "message": data})
+
+    # Notification badge/toast for the receiver.
+    await manager.broadcast(f"notif_{friend_id}", {
+        "type": "dm_message_notification",
+        "friend_id": current_user.id,
+        "friend_username": current_user.username,
+        "message": data
+    })
+
     return data
 
 # ── Friends ──
