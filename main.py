@@ -4,15 +4,44 @@ from fastapi.requests import Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import Column, String, DateTime, ForeignKey, UniqueConstraint, or_, func
 from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
 from database import get_db, engine
 from models import Base, User, Group, Pin, Review, Message, group_members
 from auth import hash_password, verify_password, create_token, get_current_user
-import datetime, os, json
+import datetime, os, json, uuid
 
 load_dotenv()
+
+
+# ── Friend system tables ──
+# These live here so you do not need to edit models.py. Base.metadata.create_all()
+# will create the tables on startup if they do not already exist.
+class Friendship(Base):
+    __tablename__ = "friendships"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_a_id = Column(String, ForeignKey("users.id"), nullable=False)
+    user_b_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    __table_args__ = (UniqueConstraint("user_a_id", "user_b_id", name="uq_friendship_pair"),)
+
+class FriendRequest(Base):
+    __tablename__ = "friend_requests"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    from_user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    to_user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    __table_args__ = (UniqueConstraint("from_user_id", "to_user_id", name="uq_friend_request_pair"),)
+
+class BlockedUser(Base):
+    __tablename__ = "blocked_users"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    blocker_id = Column(String, ForeignKey("users.id"), nullable=False)
+    blocked_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    __table_args__ = (UniqueConstraint("blocker_id", "blocked_id", name="uq_blocked_pair"),)
 
 # Create all tables on startup
 Base.metadata.create_all(bind=engine)
@@ -88,6 +117,9 @@ class MessageBody(BaseModel):
 class InviteBody(BaseModel):
     username: str
 
+class FriendBody(BaseModel):
+    username: str
+
 # ── Pages ──
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
@@ -124,18 +156,6 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
 @app.get("/api/auth/me")
 def me(current_user: User = Depends(get_current_user)):
     return {"id": current_user.id, "username": current_user.username, "email": current_user.email}
-
-@app.get("/api/profile")
-def profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    pin_count = db.query(Pin).filter(Pin.author_id == current_user.id).count()
-    group_count = len(current_user.groups)
-    return {
-        "id": current_user.id,
-        "username": current_user.username,
-        "email": current_user.email,
-        "pin_count": pin_count,
-        "group_count": group_count,
-    }
 
 # ── Groups ──
 @app.get("/api/groups")
@@ -227,6 +247,8 @@ async def post_message(group_id: str, body: MessageBody,
 # ── DMs ──
 @app.get("/api/dm/{friend_id}")
 def get_dm(friend_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not _is_friend(db, current_user.id, friend_id) or _is_blocked(db, current_user.id, friend_id):
+        raise HTTPException(403, "You can only message friends")
     msgs = db.query(Message).filter(
         Message.dm_to_id != None,
         ((Message.author_id == current_user.id) & (Message.dm_to_id == friend_id)) |
@@ -238,28 +260,202 @@ def get_dm(friend_id: str, current_user: User = Depends(get_current_user), db: S
 async def post_dm(friend_id: str, body: MessageBody,
                   current_user: User = Depends(get_current_user),
                   db: Session = Depends(get_db)):
+    if not _is_friend(db, current_user.id, friend_id) or _is_blocked(db, current_user.id, friend_id):
+        raise HTTPException(403, "You can only message friends")
     msg = Message(dm_to_id=friend_id, author_id=current_user.id, text=body.text)
     db.add(msg)
     db.commit()
     db.refresh(msg)
     data = _msg_dict(msg)
-    dm_channel = f"dm_{min(current_user.id, friend_id)}_{max(current_user.id, friend_id)}"
+    a, b = _friend_pair(current_user.id, friend_id)
+    dm_channel = f"dm_{a}_{b}"
     await manager.broadcast(dm_channel, {"type": "new_dm", "message": data})
     return data
 
 # ── Friends ──
+def _norm_username(name: str) -> str:
+    return (name or "").strip().lower()
+
+def _friend_pair(a: str, b: str) -> tuple[str, str]:
+    a, b = str(a), str(b)
+    return (a, b) if a < b else (b, a)
+
+def _get_user_by_username(db: Session, username: str) -> Optional[User]:
+    return db.query(User).filter(func.lower(User.username) == _norm_username(username)).first()
+
+def _is_friend(db: Session, user_a_id: str, user_b_id: str) -> bool:
+    a, b = _friend_pair(user_a_id, user_b_id)
+    return db.query(Friendship).filter(
+        Friendship.user_a_id == a,
+        Friendship.user_b_id == b
+    ).first() is not None
+
+def _is_blocked(db: Session, user_a_id: str, user_b_id: str) -> bool:
+    return db.query(BlockedUser).filter(
+        or_(
+            (BlockedUser.blocker_id == str(user_a_id)) & (BlockedUser.blocked_id == str(user_b_id)),
+            (BlockedUser.blocker_id == str(user_b_id)) & (BlockedUser.blocked_id == str(user_a_id))
+        )
+    ).first() is not None
+
+def _make_friendship(db: Session, user_a_id: str, user_b_id: str) -> None:
+    a, b = _friend_pair(user_a_id, user_b_id)
+    if not db.query(Friendship).filter(Friendship.user_a_id == a, Friendship.user_b_id == b).first():
+        db.add(Friendship(user_a_id=a, user_b_id=b))
+
+def _friend_request_dict(req: FriendRequest, db: Session) -> dict:
+    sender = db.query(User).filter(User.id == req.from_user_id).first()
+    return {
+        "id": req.id,
+        "from_id": req.from_user_id,
+        "from_username": sender.username if sender else "Unknown",
+        "time": req.created_at.strftime("%b %d")
+    }
+
 @app.get("/api/friends")
 def get_friends(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Friends are users who share at least one group
-    seen = set()
+    rows = db.query(Friendship).filter(
+        or_(Friendship.user_a_id == current_user.id, Friendship.user_b_id == current_user.id)
+    ).all()
+    friend_ids = [r.user_b_id if r.user_a_id == current_user.id else r.user_a_id for r in rows]
+    if not friend_ids:
+        return []
+    users = db.query(User).filter(User.id.in_(friend_ids)).all()
     friends = []
-    for group in current_user.groups:
-        for member in group.members:
-            if member.id != current_user.id and member.id not in seen:
-                seen.add(member.id)
-                pin_count = db.query(Review).filter(Review.author_id == member.id).count()
-                friends.append({"id": member.id, "username": member.username, "pin_count": pin_count})
+    for u in users:
+        if _is_blocked(db, current_user.id, u.id):
+            continue
+        pin_count = db.query(Review).filter(Review.author_id == u.id).count()
+        friends.append({"id": u.id, "username": u.username, "pin_count": pin_count})
+    friends.sort(key=lambda f: f["username"].lower())
     return friends
+
+@app.post("/api/friends/request")
+async def send_friend_request(body: FriendBody,
+                              current_user: User = Depends(get_current_user),
+                              db: Session = Depends(get_db)):
+    username = body.username.strip()
+    if not username:
+        raise HTTPException(400, "Enter a username")
+    if _norm_username(username) == _norm_username(current_user.username):
+        raise HTTPException(400, "You cannot add yourself")
+
+    target = _get_user_by_username(db, username)
+    if not target:
+        raise HTTPException(404, "User not found")
+    if _is_blocked(db, current_user.id, target.id):
+        raise HTTPException(403, "You cannot send a request to this user")
+    if _is_friend(db, current_user.id, target.id):
+        raise HTTPException(400, "This user is already your friend")
+
+    # If they already requested you, tell the user to accept that request instead.
+    incoming = db.query(FriendRequest).filter(
+        FriendRequest.from_user_id == target.id,
+        FriendRequest.to_user_id == current_user.id
+    ).first()
+    if incoming:
+        raise HTTPException(400, "This user already sent you a request. Open Requests to accept it.")
+
+    existing = db.query(FriendRequest).filter(
+        FriendRequest.from_user_id == current_user.id,
+        FriendRequest.to_user_id == target.id
+    ).first()
+    if existing:
+        raise HTTPException(400, "Friend request already sent")
+
+    req = FriendRequest(from_user_id=current_user.id, to_user_id=target.id)
+    db.add(req)
+    db.commit()
+    db.refresh(req)
+    data = _friend_request_dict(req, db)
+    await manager.broadcast(f"notif_{target.id}", {"type": "friend_request", "request": data})
+    return {"ok": True, "request": data}
+
+@app.get("/api/friends/requests")
+def get_friend_requests(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    requests = db.query(FriendRequest).filter(FriendRequest.to_user_id == current_user.id).all()
+    return [_friend_request_dict(r, db) for r in requests if not _is_blocked(db, current_user.id, r.from_user_id)]
+
+@app.post("/api/friends/request/{request_id}/accept")
+async def accept_friend_request(request_id: str,
+                                current_user: User = Depends(get_current_user),
+                                db: Session = Depends(get_db)):
+    req = db.query(FriendRequest).filter(
+        FriendRequest.id == request_id,
+        FriendRequest.to_user_id == current_user.id
+    ).first()
+    if not req:
+        raise HTTPException(404, "Friend request not found")
+    if _is_blocked(db, current_user.id, req.from_user_id):
+        raise HTTPException(403, "This user is blocked")
+
+    _make_friendship(db, current_user.id, req.from_user_id)
+    sender = db.query(User).filter(User.id == req.from_user_id).first()
+    db.delete(req)
+    db.commit()
+    await manager.broadcast(f"notif_{req.from_user_id}", {
+        "type": "friend_accepted",
+        "username": current_user.username,
+        "friend": {"id": current_user.id, "username": current_user.username, "pin_count": 0}
+    })
+    return {"ok": True, "friend": {"id": sender.id, "username": sender.username} if sender else None}
+
+@app.post("/api/friends/request/{request_id}/decline")
+def decline_friend_request(request_id: str,
+                           current_user: User = Depends(get_current_user),
+                           db: Session = Depends(get_db)):
+    req = db.query(FriendRequest).filter(
+        FriendRequest.id == request_id,
+        FriendRequest.to_user_id == current_user.id
+    ).first()
+    if not req:
+        raise HTTPException(404, "Friend request not found")
+    db.delete(req)
+    db.commit()
+    return {"ok": True}
+
+@app.delete("/api/friends/{username}")
+def unfriend(username: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    friend = _get_user_by_username(db, username)
+    if not friend:
+        raise HTTPException(404, "User not found")
+    a, b = _friend_pair(current_user.id, friend.id)
+    row = db.query(Friendship).filter(Friendship.user_a_id == a, Friendship.user_b_id == b).first()
+    if row:
+        db.delete(row)
+        db.commit()
+    return {"ok": True}
+
+@app.post("/api/friends/block")
+def block_user(body: FriendBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    target = _get_user_by_username(db, body.username)
+    if not target:
+        raise HTTPException(404, "User not found")
+    if target.id == current_user.id:
+        raise HTTPException(400, "You cannot block yourself")
+
+    # Remove friendship and pending requests in both directions.
+    a, b = _friend_pair(current_user.id, target.id)
+    friendship = db.query(Friendship).filter(Friendship.user_a_id == a, Friendship.user_b_id == b).first()
+    if friendship:
+        db.delete(friendship)
+    pending = db.query(FriendRequest).filter(
+        or_(
+            (FriendRequest.from_user_id == current_user.id) & (FriendRequest.to_user_id == target.id),
+            (FriendRequest.from_user_id == target.id) & (FriendRequest.to_user_id == current_user.id)
+        )
+    ).all()
+    for req in pending:
+        db.delete(req)
+
+    existing = db.query(BlockedUser).filter(
+        BlockedUser.blocker_id == current_user.id,
+        BlockedUser.blocked_id == target.id
+    ).first()
+    if not existing:
+        db.add(BlockedUser(blocker_id=current_user.id, blocked_id=target.id))
+    db.commit()
+    return {"ok": True}
 
 @app.get("/api/users/search")
 def search_users(q: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
