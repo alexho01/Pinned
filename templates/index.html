@@ -204,6 +204,28 @@ html,body{height:100%;background:var(--bg);font-family:'Nunito',sans-serif;color
 .md-row:last-child{padding-bottom:10px;}
 
 
+
+/* Message notification badge on Chat button */
+.msg-notif-badge{
+  position:absolute;top:-6px;right:-6px;
+  min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  background:#ec4899;color:#fff;font-size:10px;font-weight:800;
+  display:none;align-items:center;justify-content:center;
+  border:2px solid var(--white);line-height:1;
+}
+.msg-notif-badge.on{display:flex;}
+.nav-btn{position:relative;}
+
+/* Add friends directly into an existing group */
+.md-add-wrap{border-top:1.5px solid var(--border);padding:8px 10px 10px;}
+.md-add-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.md-add-list{display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;}
+.md-add-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;background:var(--bg);border:1.5px solid var(--border);}
+.md-add-row-name{font-size:12px;font-weight:700;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.md-add-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--blue-pale);background:var(--blue-faint);color:var(--blue-mid);font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.md-add-btn:hover{background:var(--blue-pale);border-color:var(--blue);}
+.md-empty{font-size:12px;color:var(--muted);padding:4px 0;}
+
 /* Friend icon notification badge */
 .notif-badge{
   position:absolute;top:-4px;right:-4px;
@@ -529,6 +551,7 @@ textarea.fi{resize:none;height:76px;}
     <button class="nav-btn primary" onclick="openChat()">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       Chat
+      <span class="msg-notif-badge" id="chatMsgBadge"></span>
     </button>
     <button class="nav-btn" onclick="openSettings()">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -787,11 +810,6 @@ const PICONS={coffee:"☕",restaurant:"🍜",bar:"🍸",viewpoint:"⭐",shop:"�
 const PCOLORS={coffee:"#f59e0b",restaurant:"#5aabf5",bar:"#ec4899",viewpoint:"#a78bfa",shop:"#3b82f6",park:"#22c55e",other:"#8aaac8"};
 const GCOLS=["#5aabf5","#f59e0b","#ec4899","#a78bfa","#22c55e","#f97316","#14b8a6"];
 const AVCOLS=["#5aabf5","#f59e0b","#ec4899","#a78bfa","#22c55e","#f97316","#14b8a6"];
-const ALL_FRIENDS=[
-  {n:"Sophie L.",i:"SL"},{n:"Marcus K.",i:"MK"},{n:"Jamie R.",i:"JR"},
-  {n:"Alex B.",i:"AB"},{n:"Zoe K.",i:"ZK"},{n:"Dan M.",i:"DM"},
-  {n:"Priya S.",i:"PS"},{n:"Leo T.",i:"LT"},{n:"Mia C.",i:"MC"},{n:"Noah P.",i:"NP"},
-];
 
 function htmlEscape(value){
   return String(value ?? "").replace(/[&<>'"]/g,function(ch){
@@ -813,6 +831,30 @@ function myPinTotal(){
 // ── AUTH TOKEN ──
 let authToken = localStorage.getItem("pinned_token") || null;
 let currentUser = JSON.parse(localStorage.getItem("pinned_user") || "null");
+let messageNotifCount = Number(localStorage.getItem("pinned_message_notif_count") || "0");
+
+function updateMessageNotifBadge(){
+  const badge=document.getElementById("chatMsgBadge");
+  if(!badge)return;
+  if(messageNotifCount>0){
+    badge.textContent=messageNotifCount>9?"9+":messageNotifCount;
+    badge.classList.add("on");
+  }else{
+    badge.classList.remove("on");
+  }
+}
+function addMessageNotification(text){
+  messageNotifCount+=1;
+  localStorage.setItem("pinned_message_notif_count",String(messageNotifCount));
+  updateMessageNotifBadge();
+  if(typeof showToast==="function")showToast(text);
+}
+function clearMessageNotifications(){
+  messageNotifCount=0;
+  localStorage.setItem("pinned_message_notif_count","0");
+  updateMessageNotifBadge();
+}
+
 
 function apiHeaders(){
   return {
@@ -907,6 +949,7 @@ async function initApp(){
   renderDmList();
   updateMyPinCount();
   connectNotifWS();
+  updateMessageNotifBadge();
 }
 
 // ── SIDEBAR ──
@@ -998,8 +1041,6 @@ function renderMembers(g,gi){
 const dmCache={};  // { friendName: [msgs] }
 let currentDmFriend=null;
 
-// Extra DM friends added via add-friend modal (not in any group)
-const extraDmFriends=[];
 
 function getPinCount(name){
   return pins.filter(function(p){
@@ -1361,18 +1402,74 @@ document.addEventListener("click",function(e){
     if(btn)btn.classList.remove("open");
   }
 });
+function groupMemberNames(g){
+  const names=[];
+  (g.members||[]).forEach(function(m){names.push(memberName(m).toLowerCase());});
+  if(currentUser&&currentUser.username)names.push(currentUser.username.toLowerCase());
+  return new Set(names);
+}
+function availableFriendsForGroup(g){
+  const memberNames=groupMemberNames(g);
+  return (realFriends||[]).filter(function(f){return !memberNames.has(String(f.username).toLowerCase());});
+}
 function renderMemberDrop(g,gi){
-  const members=[currentUser?currentUser.username:"You",...(g.members||[]).map(memberName)];
-  document.getElementById("memberDrop").innerHTML=
-    '<div class="md-title">'+htmlEscape(g.name)+' · '+members.length+' members</div>'+ 
-    members.map(function(m,i){
-      const ac=AVCOLS[i%AVCOLS.length];
-      const ini=m==="You"?"ME":m.split(" ").map(function(x){return x[0];}).join("").slice(0,2).toUpperCase();
-      return '<div class="md-row">'+
-        '<div style="width:26px;height:26px;border-radius:50%;background:'+ac+'20;color:'+ac+';border:2px solid '+ac+'40;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+ini+'</div>'+ 
-        '<span style="font-size:13px;font-weight:600;color:var(--text)">'+htmlEscape(m)+'</span>'+ 
+  const members=[...(g.members||[]).map(memberName)];
+  const alreadyNames=new Set(members.map(function(x){return x.toLowerCase();}));
+  if(currentUser&&currentUser.username&&!alreadyNames.has(currentUser.username.toLowerCase())){
+    members.unshift(currentUser.username);
+  }
+  const inviteFriends=availableFriendsForGroup(g);
+  const memberHtml=members.map(function(m,i){
+    const ac=AVCOLS[i%AVCOLS.length];
+    const ini=m==="You"?"ME":m.split(" ").map(function(x){return x[0];}).join("").slice(0,2).toUpperCase();
+    return '<div class="md-row">'+
+      '<div style="width:26px;height:26px;border-radius:50%;background:'+ac+'20;color:'+ac+';border:2px solid '+ac+'40;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+ini+'</div>'+
+      '<span style="font-size:13px;font-weight:600;color:var(--text)">'+htmlEscape(m)+'</span>'+
+    '</div>';
+  }).join("");
+  const inviteHtml='<div class="md-add-wrap">'+
+    '<div class="md-add-title">➕ Add friends to group</div>'+
+    (inviteFriends.length?'<div class="md-add-list">'+inviteFriends.map(function(f,i){
+      const ac=AVCOLS[(i+members.length)%AVCOLS.length];
+      const ini=f.username.split(" ").map(function(x){return x[0];}).join("").slice(0,2).toUpperCase();
+      return '<div class="md-add-row">'+
+        '<div style="width:24px;height:24px;border-radius:50%;background:'+ac+'20;color:'+ac+';border:2px solid '+ac+'40;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">'+ini+'</div>'+
+        '<span class="md-add-row-name">'+htmlEscape(f.username)+'</span>'+
+        '<button class="md-add-btn" onclick="inviteFriendToActiveGroup(\''+jsEscape(f.username)+'\')" title="Add to group">+</button>'+
       '</div>';
-    }).join("");
+    }).join("")+'</div>':'<div class="md-empty">All of your friends are already in this group.</div>')+
+  '</div>';
+  document.getElementById("memberDrop").innerHTML=
+    '<div class="md-title">'+htmlEscape(g.name)+' · '+members.length+' members</div>'+memberHtml+inviteHtml;
+}
+async function inviteFriendToActiveGroup(username){
+  if(!activeGroup)return;
+  try{
+    const res=await fetch("/api/groups/"+encodeURIComponent(activeGroup.id)+"/invite",{
+      method:"POST",
+      headers:apiHeaders(),
+      body:JSON.stringify({username:username})
+    });
+    const data=await res.json();
+    if(!res.ok){showToast(data.detail||"Could not add friend to group");return;}
+    if(data.group){
+      const idx=groups.findIndex(function(g){return String(g.id)===String(data.group.id);});
+      if(idx>-1)groups[idx]=data.group; else groups.push(data.group);
+      activeGroup=data.group;
+    }else{
+      await reloadGroupsKeepActive();
+    }
+    renderGroups();
+    fillPGrp();
+    renderMemberDrop(activeGroup,groups.findIndex(function(g){return g.id===activeGroup.id;}));
+    showToast(username+" added to "+activeGroup.name);
+  }catch(e){showToast("Could not connect.");}
+}
+async function reloadGroupsKeepActive(){
+  const oldId=activeGroup?activeGroup.id:null;
+  const fresh=await fetch("/api/groups",{headers:apiHeaders()}).then(function(r){return r.json();});
+  if(Array.isArray(fresh))groups=fresh;
+  if(oldId){activeGroup=groups.find(function(g){return String(g.id)===String(oldId);})||activeGroup;}
 }
 
 // ── DROP PIN ──
@@ -1459,14 +1556,22 @@ function openCreateGroup(){
 }
 function renderFriends(){
   const q=(document.getElementById("fsearch")||{value:""}).value.toLowerCase();
-  const fl=ALL_FRIENDS.filter(f=>f.n.toLowerCase().includes(q));
-  document.getElementById("flist").innerHTML=fl.map((f,i)=>{
-    const on=selFriends.includes(f.n);
+  const fl=(realFriends||[]).filter(function(f){return f.username.toLowerCase().includes(q);});
+  const flist=document.getElementById("flist");
+  if(!flist)return;
+  if(!fl.length){
+    flist.innerHTML="<div style='font-size:12px;color:var(--muted);text-align:center;padding:14px'>No friends found. Add friends from Messages first.</div>";
+    return;
+  }
+  flist.innerHTML=fl.map(function(f,i){
+    const name=f.username;
+    const on=selFriends.includes(name);
     const ac=AVCOLS[i%AVCOLS.length];
-    return `<div class="fopt ${on?"on":""}" onclick="toggleF('${f.n}')">
+    const ini=name.split(" ").map(function(x){return x[0];}).join("").slice(0,2).toUpperCase();
+    return `<div class="fopt ${on?"on":""}" onclick="toggleF('${jsEscape(name)}')">
       <div class="fchk">${on?"✓":""}</div>
-      <div class="av" style="background:${ac}20;color:${ac};border:2px solid ${ac}40;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${f.i}</div>
-      <span class="fname">${f.n}</span>
+      <div class="av" style="background:${ac}20;color:${ac};border:2px solid ${ac}40;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${ini}</div>
+      <span class="fname">${htmlEscape(name)}</span>
     </div>`;
   }).join("");
 }
@@ -1477,20 +1582,30 @@ function toggleF(name){
 }
 function renderFTags(){
   document.getElementById("ftags").innerHTML=selFriends.map(f=>`
-    <div class="ftag" onclick="toggleF('${f}')">${f.split(" ")[0]} <span style="opacity:.6">✕</span></div>`).join("");
+    <div class="ftag" onclick="toggleF('${jsEscape(f)}')">${htmlEscape(f.split(" ")[0])} <span style="opacity:.6">✕</span></div>`).join("");
 }
 async function submitGroup(){
   const name=document.getElementById("ngname").value.trim();
   if(!name)return;
+  const payload={
+    name:name,
+    emoji:selEmoji,
+    color:GCOLS[groups.length%GCOLS.length],
+    member_usernames:selFriends
+  };
   try{
-    const res=await fetch("/api/groups",{method:"POST",headers:apiHeaders(),body:JSON.stringify({name:name,emoji:selEmoji,color:GCOLS[groups.length%GCOLS.length]})});
-    const g=await res.json();
-    if(!res.ok){alert(g.detail||"Could not create group.");return;}
-    groups.push(g);
+    const res=await fetch("/api/groups",{
+      method:"POST",
+      headers:apiHeaders(),
+      body:JSON.stringify(payload)
+    });
+    const saved=await res.json();
+    if(!res.ok){showToast(saved.detail||"Could not create group");return;}
+    groups.push(saved);
     renderGroups();fillPGrp();
-    setAG(g);
+    setAG(saved);
     closeMo("cgMo");
-  }catch(e){alert("Could not connect to server.");}
+  }catch(e){showToast("Could not connect.");}
 }
 
 function closeMo(id){
@@ -1726,11 +1841,28 @@ function connectNotifWS(){
     } else if(data.type==="friend_accepted"){
       showToast(data.username+" accepted your friend request");
       loadFriends();
+    } else if(data.type==="group_message_notification"){
+      const author=data.message&&data.message.author?data.message.author:"Someone";
+      const groupName=data.group_name||"a group";
+      const openInGroup=currentChatGid&&String(currentChatGid)===String(data.group_id)&&document.getElementById("gchatView").classList.contains("on");
+      if(!openInGroup)addMessageNotification(author+" messaged in "+groupName);
+    } else if(data.type==="dm_message_notification"){
+      const username=data.friend_username||"Someone";
+      const openInDm=currentDmFriend&&String(currentDmFriend.id)===String(data.friend_id)&&document.getElementById("dmView").classList.contains("on");
+      if(!openInDm)addMessageNotification(username+" sent you a message");
+    } else if(data.type==="added_to_group"){
+      if(data.group){
+        const idx=groups.findIndex(function(g){return String(g.id)===String(data.group.id);});
+        if(idx>-1)groups[idx]=data.group; else groups.push(data.group);
+        renderGroups();fillPGrp();
+      }
+      showToast((data.added_by||"Someone")+" added you to "+(data.group&&data.group.name?data.group.name:"a group"));
     }
   };
   ws.onclose=function(){
     setTimeout(function(){if(authToken)connectNotifWS();},4000);
   };
+  ws.onerror=function(){try{ws.close();}catch(e){}};
 }
 
 // ── SETTINGS ──
@@ -1776,6 +1908,7 @@ function toggleDarkMode(){
 
 // ── CHAT BUTTON ──
 function openChat(){
+  clearMessageNotifications();
   showSidebar();
   switchTab("dms");
 }
