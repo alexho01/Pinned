@@ -69,7 +69,7 @@ The screenshots below show the main user flows in Pinned, including account crea
 
 | Friend Requests | Direct Messages |
 |---|---|
-| <img width="420" alt="Friend request interface" src="https://github.com/user-attachments/assets/03ce4066-9ca3-4b82-99db-c920b7c8070f" /> | <img width="420" alt="Direct message interface" src="https://github.com/user-attachments/assets/1a18aafa-244f-407e-984d-22c2202628e9" /> |
+| <img width="420" alt="Group Messages" src="https://github.com/user-attachments/assets/03ce4066-9ca3-4b82-99db-c920b7c8070f" /> | <img width="420" alt="Direct message interface" src="https://github.com/user-attachments/assets/1a18aafa-244f-407e-984d-22c2202628e9" /> |
 
 | Message Notifications | Friend Options |
 |---|---|
