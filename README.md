@@ -57,33 +57,43 @@ Anyone can create an account and use the app from a browser without installing a
 
 ## Screenshots
 
-### Login and Account Creation
+The screenshots below show the main user flows in Pinned, including account creation, the map interface, friend requests, direct messages, group chat, and group member management.
 
-<img width="1902" height="917" alt="image" src="https://github.com/user-attachments/assets/e0ebf715-a8c5-4bbf-8ade-b57fe2b29b11" />
+### Main App Views
 
-### Main Map Interface
+| Login and Account Creation | Main Map Interface |
+|---|---|
+| <img width="420" alt="Login and account creation screen" src="https://github.com/user-attachments/assets/e0ebf715-a8c5-4bbf-8ade-b57fe2b29b11" /> | <img width="420" alt="Main map interface with pins and navigation" src="https://github.com/user-attachments/assets/d04bf243-ec38-4ef3-88b0-d75604dcb858" /> |
 
-Add a screenshot here showing the Google Map, pins, sidebar, and navigation.
+### Friends and Messaging
 
-```markdown
-![Map Interface](images/map.png)
-```
+| Friend Requests | Direct Messages |
+|---|---|
+| <img width="420" alt="Friend request interface" src="https://github.com/user-attachments/assets/03ce4066-9ca3-4b82-99db-c920b7c8070f" /> | <img width="420" alt="Direct message interface" src="https://github.com/user-attachments/assets/1a18aafa-244f-407e-984d-22c2202628e9" /> |
 
-### Friends and Messages
+| Message Notifications | Friend Options |
+|---|---|
+| <img width="420" alt="Unread message notifications" src="https://github.com/user-attachments/assets/a3e3b540-9ea9-46a0-9988-c1b758207c55" /> | <img width="420" alt="Friend menu with unfriend and block options" src="https://github.com/user-attachments/assets/0ad14d81-f040-4ba4-8d42-185172f9f635" /> |
 
-Add a screenshot here showing the friend request panel, direct messages, or unread notifications.
+### Groups and Member Management
 
-```markdown
-![Messages Interface](images/messages.png)
-```
+| Group Chat | Group Member Dropdown |
+|---|---|
+| <img width="420" alt="Private group chat interface" src="https://github.com/user-attachments/assets/92fd7b93-ca84-435c-88ca-29ae36b9a06b" /> | <img width="300" alt="Group member dropdown" src="https://github.com/user-attachments/assets/ae6575fb-7ef1-4ea1-9a4c-fbbcd5f84af1" /> |
+
+| Add Friends to Group | Leave Group |
+|---|---|
+| <img width="300" alt="Add friends to existing group" src="https://github.com/user-attachments/assets/81324b46-6f11-4092-ac0b-1c50664a7920" /> | <img width="300" alt="Leave group option" src="https://github.com/user-attachments/assets/5d3eaed7-c6aa-43f6-b4b8-974e61c74610" /> |
 
 ### Group Chat and Member Management
 
-Add a screenshot here showing a group chat, group members dropdown, add friend to group option, and leave group button.
+<img width="1910" height="925" alt="image" src="https://github.com/user-attachments/assets/92fd7b93-ca84-435c-88ca-29ae36b9a06b" />
 
-```markdown
-![Group Chat](images/group-chat.png)
-```
+<img width="890" height="534" alt="image" src="https://github.com/user-attachments/assets/ae6575fb-7ef1-4ea1-9a4c-fbbcd5f84af1" />
+
+<img width="749" height="627" alt="image" src="https://github.com/user-attachments/assets/81324b46-6f11-4092-ac0b-1c50664a7920" />
+
+<img width="749" height="627" alt="image" src="https://github.com/user-attachments/assets/5d3eaed7-c6aa-43f6-b4b8-974e61c74610" />
 
 ---
 
