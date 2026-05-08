@@ -466,16 +466,4 @@ After that, double-click `run.bat` to start the app locally.
 
 ---
 
-## Future Improvements
-
-- Add photo uploads for pin reviews
-- Add search and filtering by category, rating, group, or friend
-- Add user profile pages with pin history and activity
-- Add shareable invite links for friends and groups
-- Add map clustering for large groups
-- Add more detailed privacy controls for groups and pins
-- Build a mobile version of the app
-
----
-
 Built as a full-stack portfolio project to practise backend development, database design, real-time communication, API integration, and deployment.
