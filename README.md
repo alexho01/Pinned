@@ -59,11 +59,7 @@ Anyone can create an account and use the app from a browser without installing a
 
 ### Login and Account Creation
 
-Add a screenshot here showing the login and create account page.
-
-```markdown
 <img width="1902" height="917" alt="image" src="https://github.com/user-attachments/assets/e0ebf715-a8c5-4bbf-8ade-b57fe2b29b11" />
-```
 
 ### Main Map Interface
 
