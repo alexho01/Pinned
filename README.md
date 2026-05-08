@@ -57,7 +57,7 @@ Anyone can create an account and use the app from a browser without installing a
 
 ## Screenshots
 
-The screenshots below show the main user flows in Pinned, including account creation, the map interface, friend requests, direct messages, group chat, and group member management.
+The screenshots below show the main user flows in Pinned, including authentication, map interaction, groups, friend management, direct messages, profile settings, and real-time chat.
 
 ### Main App Views
 
@@ -65,36 +65,27 @@ The screenshots below show the main user flows in Pinned, including account crea
 |---|---|
 | <img width="420" alt="Login and account creation screen" src="https://github.com/user-attachments/assets/e0ebf715-a8c5-4bbf-8ade-b57fe2b29b11" /> | <img width="420" alt="Main map interface with pins and navigation" src="https://github.com/user-attachments/assets/d04bf243-ec38-4ef3-88b0-d75604dcb858" /> |
 
-### Friends and Messaging
+### Groups and Shared Spaces
 
-| Friend Requests | Direct Messages |
+| Groups Created | Group Chat Messages |
 |---|---|
-| <img width="420" alt="Group Messages" src="https://github.com/user-attachments/assets/03ce4066-9ca3-4b82-99db-c920b7c8070f" /> | <img width="420" alt="Direct message interface" src="https://github.com/user-attachments/assets/1a18aafa-244f-407e-984d-22c2202628e9" /> |
+| <img width="420" alt="Groups created in the sidebar" src="https://github.com/user-attachments/assets/de6c06b8-9778-4959-8f92-0d8cd83fd157" /> | <img width="420" alt="Group chat messages" src="https://github.com/user-attachments/assets/03ce4066-9ca3-4b82-99db-c920b7c8070f" /> |
 
-| Message Notifications | Friend Options |
+### Friends and Direct Messages
+
+| Friend List and DM Sidebar | Direct Message Chat |
 |---|---|
-| <img width="420" alt="Unread message notifications" src="https://github.com/user-attachments/assets/a3e3b540-9ea9-46a0-9988-c1b758207c55" /> | <img width="420" alt="Friend menu with unfriend and block options" src="https://github.com/user-attachments/assets/0ad14d81-f040-4ba4-8d42-185172f9f635" /> |
+| <img width="420" alt="Friend list and direct message sidebar" src="https://github.com/user-attachments/assets/0ad14d81-f040-4ba4-8d42-185172f9f635" /> | <img width="420" alt="Direct message chat interface" src="https://github.com/user-attachments/assets/1a18aafa-244f-407e-984d-22c2202628e9" /> |
 
-### Groups and Member Management
+### Account and Friend Management
 
-| Group Chat | Group Member Dropdown |
+| Add Friends | Settings |
 |---|---|
-| <img width="420" alt="Private group chat interface" src="https://github.com/user-attachments/assets/92fd7b93-ca84-435c-88ca-29ae36b9a06b" /> | <img width="300" alt="Group member dropdown" src="https://github.com/user-attachments/assets/ae6575fb-7ef1-4ea1-9a4c-fbbcd5f84af1" /> |
+| <img width="300" alt="Add friends interface" src="https://github.com/user-attachments/assets/92fd7b93-ca84-435c-88ca-29ae36b9a06b" /> | <img width="300" alt="Settings modal" src="https://github.com/user-attachments/assets/ae6575fb-7ef1-4ea1-9a4c-fbbcd5f84af1" /> |
 
-| Add Friends to Group | Leave Group |
-|---|---|
-| <img width="300" alt="Add friends to existing group" src="https://github.com/user-attachments/assets/81324b46-6f11-4092-ac0b-1c50664a7920" /> | <img width="300" alt="Leave group option" src="https://github.com/user-attachments/assets/5d3eaed7-c6aa-43f6-b4b8-974e61c74610" /> |
-
-### Group Chat and Member Management
-
-<img width="1910" height="925" alt="image" src="https://github.com/user-attachments/assets/92fd7b93-ca84-435c-88ca-29ae36b9a06b" />
-
-<img width="890" height="534" alt="image" src="https://github.com/user-attachments/assets/ae6575fb-7ef1-4ea1-9a4c-fbbcd5f84af1" />
-
-<img width="749" height="627" alt="image" src="https://github.com/user-attachments/assets/81324b46-6f11-4092-ac0b-1c50664a7920" />
-
-<img width="749" height="627" alt="image" src="https://github.com/user-attachments/assets/5d3eaed7-c6aa-43f6-b4b8-974e61c74610" />
-
+| Profile |
+|---|
+| <img width="300" alt="User profile modal" src="https://github.com/user-attachments/assets/81324b46-6f11-4092-ac0b-1c50664a7920" /> |
 ---
 
 ## Core Features
